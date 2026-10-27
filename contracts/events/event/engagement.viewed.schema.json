@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/event/engagement.viewed.schema.json",
+  "title": "engagement.viewed",
+  "description": "Alguien abrió el detalle de un evento (visibilidad para el comercio).",
+  "x-exchange": "festa.event",
+  "x-routing-key": "engagement.viewed",
+  "x-producer": "event-service",
+  "x-version": 1,
+  "x-consumers": {
+    "analytics-service": "cuenta vistas por evento y por origen"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "source",
+    "viewedAt"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "viewerId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Ausente si es anónimo"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "map",
+        "search",
+        "recommendation",
+        "share_link",
+        "notification",
+        "profile"
+      ]
+    },
+    "viewedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "eventId": "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a",
+      "viewerId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "source": "map",
+      "viewedAt": "2026-10-29T20:00:00Z"
+    }
+  ]
+}

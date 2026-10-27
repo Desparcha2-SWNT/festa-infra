@@ -1,0 +1,348 @@
+# Festa — entorno local.
+#   docker compose up -d                        -> infraestructura (Postgres, Mongo, Redis, RabbitMQ)
+#   docker compose --profile monitoring up -d   -> + Prometheus y Grafana
+#   docker compose --profile auth up -d         -> infraestructura + auth-service
+#   docker compose --profile all up -d --build  -> todo
+# Los servicios se construyen desde las carpetas hermanas (../festa-*).
+
+name: festa
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+x-service: &service
+  restart: unless-stopped
+  logging: *logging
+  networks: [festa]
+
+x-amqp-env: &amqp-env
+  AMQP_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+  JWT_ISSUER: ${JWT_ISSUER}
+  JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public.pem
+  LOG_LEVEL: info
+
+x-depends-core: &depends-core
+  postgres: { condition: service_healthy }
+  rabbitmq-topology: { condition: service_completed_successfully }
+
+services:
+  # ======================= INFRAESTRUCTURA =======================
+  postgres:
+    <<: *service
+    mem_limit: 256m
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD}
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+      EVENT_DB_PASSWORD: ${EVENT_DB_PASSWORD}
+      BOOKING_DB_PASSWORD: ${BOOKING_DB_PASSWORD}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mongo:
+    <<: *service
+    mem_limit: 256m
+    image: ${MONGO_IMAGE:-mongo:7.0}
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      AI_MONGO_PASSWORD: ${AI_MONGO_PASSWORD}
+      ANALYTICS_MONGO_PASSWORD: ${ANALYTICS_MONGO_PASSWORD}
+      NOTIFICATION_MONGO_PASSWORD: ${NOTIFICATION_MONGO_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+      - ./mongo/init:/docker-entrypoint-initdb.d:ro
+    ports: ["27017:27017"]
+    healthcheck:
+      test: ["CMD-SHELL", "$$(command -v mongosh || command -v mongo) --quiet --eval 'db.adminCommand({ping: 1}).ok'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    <<: *service
+    mem_limit: 160m
+    image: redis:7.4-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    <<: *service
+    mem_limit: 384m
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      # Sin busy-wait de los schedulers de Erlang: evita 100-200% de CPU en reposo.
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "+S 2:2 +sbwt none +sbwtdcpu none +sbwtdio none"
+    volumes:
+      - rabbit-data:/var/lib/rabbitmq
+      - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-festa.conf:ro
+    ports: ["5672:5672", "15672:15672"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:15692/metrics && nc -z 127.0.0.1 5672"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
+
+  # Carga exchanges/colas/bindings desde contracts/ (única fuente de verdad) y termina.
+  rabbitmq-topology:
+    image: curlimages/curl:8.10.1
+    networks: [festa]
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+    volumes:
+      - ./contracts/rabbitmq/definitions.json:/definitions.json:ro
+    command: >
+      -sf -u ${RABBITMQ_USER}:${RABBITMQ_PASSWORD}
+      -H "content-type: application/json"
+      -X POST --data-binary @/definitions.json
+      http://rabbitmq:15672/api/definitions
+    restart: "no"
+
+  prometheus:
+    <<: *service
+    profiles: [monitoring, all]
+    mem_limit: 192m
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom-data:/prometheus
+    ports: ["9090:9090"]
+
+  grafana:
+    <<: *service
+    profiles: [monitoring, all]
+    mem_limit: 160m
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports: ["3000:3000"]
+    depends_on: [prometheus]
+
+  # ======================= GATEWAY =======================
+  gateway:
+    <<: *service
+    mem_limit: 256m
+    profiles: [gateway, all]
+    build: ../festa-gateway
+    environment:
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public.pem
+    volumes:
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
+    # 8100 (métricas/estado de Kong) solo en localhost; Prometheus la lee por la red interna.
+    ports: ["8000:8000", "8443:8443", "127.0.0.1:8100:8100"]
+
+  # ======================= SERVICIOS =======================
+  auth-service:
+    <<: *service
+    mem_limit: 384m
+    profiles: [auth, all]
+    build:
+      context: ../festa-auth-service
+      additional_contexts:
+        contracts: ./contracts
+    environment:
+      <<: *amqp-env
+      SERVER_PORT: 8081
+      DB_URL: jdbc:postgresql://postgres:5432/auth_db
+      DB_USER: auth_svc
+      DB_PASSWORD: ${AUTH_DB_PASSWORD}
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private.pem
+      JWT_ACCESS_TTL_MINUTES: ${JWT_ACCESS_TTL_MINUTES}
+      JWT_REFRESH_TTL_DAYS: ${JWT_REFRESH_TTL_DAYS}
+      GOOGLE_CLIENT_IDS: ${GOOGLE_CLIENT_IDS}
+      ALLOWED_EMAIL_DOMAIN: ${ALLOWED_EMAIL_DOMAIN}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      PII_ENCRYPTION_KEY: ${PII_ENCRYPTION_KEY}
+    volumes:
+      - ./secrets/jwt_private.pem:/run/secrets/jwt_private.pem:ro
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
+    ports: ["8081:8081"]
+    depends_on: *depends-core
+
+  user-service:
+    <<: *service
+    profiles: [user, all]
+    build:
+      context: ../festa-user-service
+      additional_contexts:
+        contracts: ./contracts
+    environment:
+      <<: *amqp-env
+      PORT: 8082
+      DATABASE_URL: postgres://user_svc:${USER_DB_PASSWORD}@postgres:5432/user_db
+      PII_ENCRYPTION_KEY: ${PII_ENCRYPTION_KEY}
+    volumes:
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
+    ports: ["8082:8082"]
+    depends_on: *depends-core
+
+  event-service:
+    <<: *service
+    profiles: [event, all]
+    build:
+      context: ../festa-event-service
+      additional_contexts:
+        contracts: ./contracts
+    environment:
+      <<: *amqp-env
+      PORT: 8083
+      DATABASE_URL: postgres://event_svc:${EVENT_DB_PASSWORD}@postgres:5432/event_db
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+    volumes:
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
+    ports: ["8083:8083"]
+    depends_on:
+      <<: *depends-core
+      redis: { condition: service_healthy }
+
+  booking-service:
+    <<: *service
+    profiles: [booking, all]
+    build:
+      context: ../festa-booking-service
+      additional_contexts:
+        contracts: ./contracts
+    environment:
+      <<: *amqp-env
+      PORT: 8084
+      DATABASE_URL: postgres://booking_svc:${BOOKING_DB_PASSWORD}@postgres:5432/booking_db
+      RESERVATION_HOLD_MINUTES: ${RESERVATION_HOLD_MINUTES}
+      QR_SIGNING_SECRET_PATH: /run/secrets/qr_signing.key
+    volumes:
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
+      - ./secrets/qr_signing.key:/run/secrets/qr_signing.key:ro
+    ports: ["8084:8084"]
+    depends_on: *depends-core
+
+  payment-service:
+    <<: *service
+    profiles: [payment, all]
+    build:
+      context: ../festa-payment-service
+      additional_contexts:
+        contracts: ./contracts
+    environment:
+      <<: *amqp-env
+      PORT: 8085
+      DATABASE_URL: postgres://payment_svc:${PAYMENT_DB_PASSWORD}@postgres:5432/payment_db
+      WOMPI_ENV: ${WOMPI_ENV}
+      WOMPI_PUBLIC_KEY: ${WOMPI_PUBLIC_KEY}
+      WOMPI_PRIVATE_KEY: ${WOMPI_PRIVATE_KEY}
+      WOMPI_EVENTS_SECRET: ${WOMPI_EVENTS_SECRET}
+      WOMPI_INTEGRITY_SECRET: ${WOMPI_INTEGRITY_SECRET}
+      WOMPI_FEE_PERCENT: ${WOMPI_FEE_PERCENT}
+      WOMPI_FEE_FIXED_CENTS: ${WOMPI_FEE_FIXED_CENTS}
+      IVA_PERCENT: ${IVA_PERCENT}
+      COMMISSION_PERCENT: ${COMMISSION_PERCENT}
+      COMMISSION_FIXED_CENTS: ${COMMISSION_FIXED_CENTS}
+      RESERVATION_HOLD_MINUTES: ${RESERVATION_HOLD_MINUTES}
+    volumes:
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
+    ports: ["8085:8085"]
+    depends_on: *depends-core
+
+  ai-service:
+    <<: *service
+    profiles: [ai, all]
+    build:
+      context: ../festa-ai-service
+      additional_contexts:
+        contracts: ./contracts
+    environment:
+      <<: *amqp-env
+      PORT: 8086
+      MONGO_URL: mongodb://ai_svc:${AI_MONGO_PASSWORD}@mongo:27017/ai_db?authSource=ai_db
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      LLM_PROVIDER: ${LLM_PROVIDER}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_CHAT_MODEL: ${LLM_CHAT_MODEL}
+      LLM_DESCRIPTION_MODEL: ${LLM_DESCRIPTION_MODEL}
+      AI_CHAT_RATE_LIMIT_PER_MIN: ${AI_CHAT_RATE_LIMIT_PER_MIN}
+    volumes:
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
+    ports: ["8086:8086"]
+    depends_on:
+      mongo: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq-topology: { condition: service_completed_successfully }
+
+  notification-service:
+    <<: *service
+    profiles: [notification, all]
+    build:
+      context: ../festa-notification-service
+      additional_contexts:
+        contracts: ./contracts
+    environment:
+      <<: *amqp-env
+      PORT: 8087
+      MONGO_URL: mongodb://notification_svc:${NOTIFICATION_MONGO_PASSWORD}@mongo:27017/notification_db?authSource=notification_db
+      FCM_SERVICE_ACCOUNT_PATH: /run/secrets/${FCM_SERVICE_ACCOUNT_FILE}
+    volumes:
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
+      - ./secrets/${FCM_SERVICE_ACCOUNT_FILE}:/run/secrets/${FCM_SERVICE_ACCOUNT_FILE}:ro
+    ports: ["8087:8087"]
+    depends_on:
+      mongo: { condition: service_healthy }
+      rabbitmq-topology: { condition: service_completed_successfully }
+
+  analytics-service:
+    <<: *service
+    profiles: [analytics, all]
+    build:
+      context: ../festa-analytics-service
+      additional_contexts:
+        contracts: ./contracts
+    environment:
+      <<: *amqp-env
+      PORT: 8088
+      MONGO_URL: mongodb://analytics_svc:${ANALYTICS_MONGO_PASSWORD}@mongo:27017/analytics_db?authSource=analytics_db
+    volumes:
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
+    ports: ["8088:8088"]
+    depends_on:
+      mongo: { condition: service_healthy }
+      rabbitmq-topology: { condition: service_completed_successfully }
+
+  # Túnel público para que Wompi pueda llamar el webhook en local (opcional).
+  tunnel:
+    profiles: [tunnel]
+    image: cloudflare/cloudflared:2024.9.1
+    command: tunnel --no-autoupdate --url http://gateway:8000
+    networks: [festa]
+
+networks:
+  festa:
+    name: festa
+
+volumes:
+  pg-data:
+  mongo-data:
+  rabbit-data:
+  prom-data:
+  grafana-data:

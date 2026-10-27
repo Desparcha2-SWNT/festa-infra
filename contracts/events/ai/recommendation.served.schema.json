@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/ai/recommendation.served.schema.json",
+  "title": "recommendation.served",
+  "description": "RF8: el chat recomendó eventos concretos en una respuesta.",
+  "x-exchange": "festa.ai",
+  "x-routing-key": "recommendation.served",
+  "x-producer": "ai-service",
+  "x-version": 1,
+  "x-consumers": {
+    "analytics-service": "\"veces recomendado\" por evento (visibilidad para el comercio) y costo de IA"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sessionId",
+    "userId",
+    "eventIds",
+    "provider",
+    "model",
+    "inputTokens",
+    "outputTokens",
+    "servedAt"
+  ],
+  "properties": {
+    "sessionId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventIds": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "provider": {
+      "type": "string",
+      "maxLength": 30
+    },
+    "model": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "inputTokens": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "outputTokens": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "servedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "sessionId": "c9d0e1f2-a3b4-4c5d-8e6f-7a8b9c0d1e2f",
+      "userId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "eventIds": [
+        "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a"
+      ],
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "inputTokens": 1400,
+      "outputTokens": 260,
+      "servedAt": "2026-10-29T19:59:00Z"
+    }
+  ]
+}

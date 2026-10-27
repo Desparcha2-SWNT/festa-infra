@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/user/merchant.updated.schema.json",
+  "title": "merchant.updated",
+  "description": "Un comercio verificado cambió nombre, categoría o ubicación.",
+  "x-exchange": "festa.user",
+  "x-routing-key": "merchant.updated",
+  "x-producer": "user-service",
+  "x-version": 1,
+  "x-consumers": {
+    "event-service": "actualiza organizerName en sus eventos",
+    "payment-service": "actualiza datos de liquidación",
+    "ai-service": "contexto para descripciones y recomendaciones"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "merchantId",
+    "userId",
+    "businessName",
+    "category",
+    "place",
+    "verified",
+    "updatedAt"
+  ],
+  "properties": {
+    "merchantId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "businessName": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "cultural",
+        "musical",
+        "deportivo",
+        "gastronomico"
+      ]
+    },
+    "place": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "address",
+        "location"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lat",
+            "lng"
+          ],
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lng": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          }
+        }
+      }
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "merchantId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "userId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+      "businessName": "Café Bohemio & Bar",
+      "category": "gastronomico",
+      "place": {
+        "name": "Café Bohemio",
+        "address": "Cl. 11 #3-45, Bogotá",
+        "location": {
+          "lat": 4.5981,
+          "lng": -74.0758
+        }
+      },
+      "verified": true,
+      "updatedAt": "2026-11-01T12:00:00Z"
+    }
+  ]
+}

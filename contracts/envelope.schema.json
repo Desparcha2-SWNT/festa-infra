@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/envelope.schema.json",
+  "title": "Sobre de mensaje Festa",
+  "description": "Todo mensaje publicado en RabbitMQ va envuelto así. `data` cumple el esquema de events/<dominio>/<eventType>.schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventType", "version", "occurredAt", "producer", "data"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Id único del mensaje. Los consumidores lo usan para idempotencia. También va en la propiedad AMQP message_id."
+    },
+    "eventType": {
+      "type": "string",
+      "pattern": "^[a-z_]+\\.[a-z_]+$",
+      "description": "Igual a la routing key, p. ej. event.published. También va en la propiedad AMQP type."
+    },
+    "version": { "type": "integer", "minimum": 1, "description": "Versión del esquema de data (x-version)." },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "producer": {
+      "type": "string",
+      "enum": ["auth-service", "user-service", "event-service", "booking-service", "payment-service", "ai-service", "notification-service", "analytics-service"]
+    },
+    "correlationId": {
+      "type": ["string", "null"],
+      "description": "X-Correlation-ID de la petición HTTP que originó la cadena de mensajes (lo pone Kong). Se propaga sin cambios."
+    },
+    "causationId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "eventId del mensaje que causó este (null si lo originó una petición HTTP o un job). Permite reconstruir la cadena."
+    },
+    "data": { "type": "object" }
+  },
+  "examples": [
+    {
+      "eventId": "1d2e3f4a-5b6c-4d7e-8f9a-0b1c2d3e4f5a",
+      "eventType": "account.registered",
+      "version": 1,
+      "occurredAt": "2026-10-24T15:00:00Z",
+      "producer": "auth-service",
+      "correlationId": "7b0c1d2e-3f4a-4b5c-9d6e-7f8a9b0c1d2e",
+      "causationId": null,
+      "data": {
+        "userId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+        "email": "ana.perez@mail.escuelaing.edu.co",
+        "displayName": "Ana Pérez",
+        "provider": "google",
+        "role": "user",
+        "registeredAt": "2026-10-24T15:00:00Z"
+      }
+    }
+  ]
+}

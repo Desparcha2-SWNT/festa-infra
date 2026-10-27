@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/user/merchant.submitted.schema.json",
+  "title": "merchant.submitted",
+  "description": "Un comercio envió (o reenvió) su perfil para verificación manual.",
+  "x-exchange": "festa.user",
+  "x-routing-key": "merchant.submitted",
+  "x-producer": "user-service",
+  "x-version": 1,
+  "x-consumers": {
+    "notification-service": "avisa a los admins",
+    "analytics-service": "cuenta solicitudes pendientes"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "merchantId",
+    "userId",
+    "businessName",
+    "category",
+    "submittedAt"
+  ],
+  "properties": {
+    "merchantId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "businessName": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "cultural",
+        "musical",
+        "deportivo",
+        "gastronomico"
+      ]
+    },
+    "submittedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "merchantId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "userId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+      "businessName": "Café Bohemio",
+      "category": "gastronomico",
+      "submittedAt": "2026-10-24T15:00:00Z"
+    }
+  ]
+}

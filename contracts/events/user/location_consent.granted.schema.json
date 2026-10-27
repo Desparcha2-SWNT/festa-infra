@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/user/location_consent.granted.schema.json",
+  "title": "location_consent.granted",
+  "description": "RNF5: el usuario aceptó explícitamente el uso de su ubicación.",
+  "x-exchange": "festa.user",
+  "x-routing-key": "location_consent.granted",
+  "x-producer": "user-service",
+  "x-version": 1,
+  "x-consumers": {
+    "notification-service": "habilita push por cercanía",
+    "ai-service": "puede usar la ubicación enviada en el chat"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "userId",
+    "policyVersion",
+    "grantedAt"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "policyVersion": {
+      "type": "string",
+      "maxLength": 20,
+      "description": "Versión del texto de tratamiento de datos aceptado"
+    },
+    "grantedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "userId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "policyVersion": "2026-10",
+      "grantedAt": "2026-10-24T15:06:00Z"
+    }
+  ]
+}
