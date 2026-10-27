@@ -1,0 +1,5 @@
+# Finales de línea LF siempre: los scripts y configs corren dentro de contenedores Linux.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jar binary

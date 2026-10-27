@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/auth/account.registered.schema.json",
+  "title": "account.registered",
+  "description": "Se creó una cuenta (email o Google).",
+  "x-exchange": "festa.auth",
+  "x-routing-key": "account.registered",
+  "x-producer": "auth-service",
+  "x-version": 1,
+  "x-consumers": {
+    "user-service": "crea el perfil vacío",
+    "notification-service": "registra el rol (para saber a quién avisar como admin)",
+    "analytics-service": "cuenta registros"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "userId",
+    "email",
+    "displayName",
+    "provider",
+    "role",
+    "registeredAt"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "displayName": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "password",
+        "google"
+      ]
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "user",
+        "merchant",
+        "admin"
+      ]
+    },
+    "registeredAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "userId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "email": "ana.perez@mail.escuelaing.edu.co",
+      "displayName": "Ana Pérez",
+      "provider": "google",
+      "role": "user",
+      "registeredAt": "2026-10-24T15:00:00Z"
+    }
+  ]
+}

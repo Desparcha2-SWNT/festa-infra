@@ -1,0 +1,1120 @@
+{
+  "exchanges": [
+    {
+      "name": "festa.auth",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "festa.user",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "festa.event",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "festa.booking",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "festa.payment",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "festa.ai",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "festa.notification",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "festa.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "ai-service.inbox",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-dead-letter-exchange": "festa.dlx",
+        "x-dead-letter-routing-key": "ai-service.inbox.dlq"
+      }
+    },
+    {
+      "name": "ai-service.inbox.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-message-ttl": 10000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "ai-service.inbox"
+      }
+    },
+    {
+      "name": "ai-service.inbox.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "analytics-service.inbox",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-dead-letter-exchange": "festa.dlx",
+        "x-dead-letter-routing-key": "analytics-service.inbox.dlq"
+      }
+    },
+    {
+      "name": "analytics-service.inbox.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-message-ttl": 10000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "analytics-service.inbox"
+      }
+    },
+    {
+      "name": "analytics-service.inbox.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "auth-service.inbox",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-dead-letter-exchange": "festa.dlx",
+        "x-dead-letter-routing-key": "auth-service.inbox.dlq"
+      }
+    },
+    {
+      "name": "auth-service.inbox.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-message-ttl": 10000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "auth-service.inbox"
+      }
+    },
+    {
+      "name": "auth-service.inbox.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "booking-service.inbox",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-dead-letter-exchange": "festa.dlx",
+        "x-dead-letter-routing-key": "booking-service.inbox.dlq"
+      }
+    },
+    {
+      "name": "booking-service.inbox.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-message-ttl": 10000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "booking-service.inbox"
+      }
+    },
+    {
+      "name": "booking-service.inbox.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "event-service.inbox",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-dead-letter-exchange": "festa.dlx",
+        "x-dead-letter-routing-key": "event-service.inbox.dlq"
+      }
+    },
+    {
+      "name": "event-service.inbox.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-message-ttl": 10000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "event-service.inbox"
+      }
+    },
+    {
+      "name": "event-service.inbox.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "notification-service.inbox",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-dead-letter-exchange": "festa.dlx",
+        "x-dead-letter-routing-key": "notification-service.inbox.dlq"
+      }
+    },
+    {
+      "name": "notification-service.inbox.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-message-ttl": 10000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "notification-service.inbox"
+      }
+    },
+    {
+      "name": "notification-service.inbox.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "payment-service.inbox",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-dead-letter-exchange": "festa.dlx",
+        "x-dead-letter-routing-key": "payment-service.inbox.dlq"
+      }
+    },
+    {
+      "name": "payment-service.inbox.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-message-ttl": 10000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "payment-service.inbox"
+      }
+    },
+    {
+      "name": "payment-service.inbox.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "user-service.inbox",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-dead-letter-exchange": "festa.dlx",
+        "x-dead-letter-routing-key": "user-service.inbox.dlq"
+      }
+    },
+    {
+      "name": "user-service.inbox.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-message-ttl": 10000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "user-service.inbox"
+      }
+    },
+    {
+      "name": "user-service.inbox.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "festa.dlx",
+      "vhost": "/",
+      "destination": "ai-service.inbox.dlq",
+      "destination_type": "queue",
+      "routing_key": "ai-service.inbox.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.deleted",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "profile.updated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "location_consent.granted",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "location_consent.revoked",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.updated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.published",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.updated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.cancelled",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.sold_out",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.expired",
+      "arguments": {}
+    },
+    {
+      "source": "festa.dlx",
+      "vhost": "/",
+      "destination": "analytics-service.inbox.dlq",
+      "destination_type": "queue",
+      "routing_key": "analytics-service.inbox.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.registered",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.deleted",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.submitted",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.verified",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "report.created",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "report.resolved",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.published",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.updated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.rescheduled",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.cancelled",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.sold_out",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.expired",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "engagement.viewed",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "engagement.shared",
+      "arguments": {}
+    },
+    {
+      "source": "festa.booking",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "attendance.confirmed",
+      "arguments": {}
+    },
+    {
+      "source": "festa.booking",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "attendance.cancelled",
+      "arguments": {}
+    },
+    {
+      "source": "festa.booking",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "pass.checked_in",
+      "arguments": {}
+    },
+    {
+      "source": "festa.booking",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "pass.check_in_rejected",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.created",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.approved",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.failed",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.expired",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.refund_requested",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.refunded",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "payout.recorded",
+      "arguments": {}
+    },
+    {
+      "source": "festa.ai",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "description.generated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.ai",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "recommendation.served",
+      "arguments": {}
+    },
+    {
+      "source": "festa.notification",
+      "vhost": "/",
+      "destination": "analytics-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "push.sent",
+      "arguments": {}
+    },
+    {
+      "source": "festa.dlx",
+      "vhost": "/",
+      "destination": "auth-service.inbox.dlq",
+      "destination_type": "queue",
+      "routing_key": "auth-service.inbox.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "auth-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "moderation.user_suspended",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "auth-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "moderation.user_reinstated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.dlx",
+      "vhost": "/",
+      "destination": "booking-service.inbox.dlq",
+      "destination_type": "queue",
+      "routing_key": "booking-service.inbox.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "booking-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.deleted",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "booking-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.published",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "booking-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.updated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "booking-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.cancelled",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "booking-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.expired",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "booking-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.approved",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "booking-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.refunded",
+      "arguments": {}
+    },
+    {
+      "source": "festa.dlx",
+      "vhost": "/",
+      "destination": "event-service.inbox.dlq",
+      "destination_type": "queue",
+      "routing_key": "event-service.inbox.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "event-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.deleted",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "event-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.verified",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "event-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.updated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "event-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "moderation.user_suspended",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "event-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "moderation.user_reinstated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "event-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "moderation.event_hidden",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "event-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "moderation.event_restored",
+      "arguments": {}
+    },
+    {
+      "source": "festa.booking",
+      "vhost": "/",
+      "destination": "event-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "attendance.confirmed",
+      "arguments": {}
+    },
+    {
+      "source": "festa.booking",
+      "vhost": "/",
+      "destination": "event-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "attendance.cancelled",
+      "arguments": {}
+    },
+    {
+      "source": "festa.dlx",
+      "vhost": "/",
+      "destination": "notification-service.inbox.dlq",
+      "destination_type": "queue",
+      "routing_key": "notification-service.inbox.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.registered",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.role_changed",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.deleted",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "profile.updated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "location_consent.granted",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "location_consent.revoked",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.submitted",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.verified",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.rejected",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "report.created",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "report.resolved",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "moderation.user_suspended",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "moderation.user_reinstated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.published",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.rescheduled",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.cancelled",
+      "arguments": {}
+    },
+    {
+      "source": "festa.booking",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "attendance.confirmed",
+      "arguments": {}
+    },
+    {
+      "source": "festa.booking",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "attendance.cancelled",
+      "arguments": {}
+    },
+    {
+      "source": "festa.booking",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "pass.checked_in",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.approved",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.failed",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.expired",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.refund_requested",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "order.refunded",
+      "arguments": {}
+    },
+    {
+      "source": "festa.payment",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "payout.recorded",
+      "arguments": {}
+    },
+    {
+      "source": "festa.dlx",
+      "vhost": "/",
+      "destination": "payment-service.inbox.dlq",
+      "destination_type": "queue",
+      "routing_key": "payment-service.inbox.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "payment-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.deleted",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "payment-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.verified",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "payment-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.updated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "payment-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.published",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "payment-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.updated",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "payment-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.cancelled",
+      "arguments": {}
+    },
+    {
+      "source": "festa.event",
+      "vhost": "/",
+      "destination": "payment-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "event.expired",
+      "arguments": {}
+    },
+    {
+      "source": "festa.dlx",
+      "vhost": "/",
+      "destination": "user-service.inbox.dlq",
+      "destination_type": "queue",
+      "routing_key": "user-service.inbox.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "user-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.registered",
+      "arguments": {}
+    },
+    {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "user-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.deleted",
+      "arguments": {}
+    }
+  ]
+}

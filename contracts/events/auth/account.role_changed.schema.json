@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/auth/account.role_changed.schema.json",
+  "title": "account.role_changed",
+  "description": "Cambió el rol de una cuenta (p. ej. un admin promueve a otro admin). Aplica en el siguiente refresh del token.",
+  "x-exchange": "festa.auth",
+  "x-routing-key": "account.role_changed",
+  "x-producer": "auth-service",
+  "x-version": 1,
+  "x-consumers": {
+    "notification-service": "actualiza la lista de admins a notificar"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "userId",
+    "previousRole",
+    "newRole",
+    "changedBy",
+    "changedAt"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "previousRole": {
+      "type": "string",
+      "enum": [
+        "user",
+        "merchant",
+        "admin"
+      ]
+    },
+    "newRole": {
+      "type": "string",
+      "enum": [
+        "user",
+        "merchant",
+        "admin"
+      ]
+    },
+    "changedBy": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "changedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "userId": "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b",
+      "previousRole": "user",
+      "newRole": "admin",
+      "changedBy": "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b",
+      "changedAt": "2026-10-24T16:00:00Z"
+    }
+  ]
+}

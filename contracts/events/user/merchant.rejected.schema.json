@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/user/merchant.rejected.schema.json",
+  "title": "merchant.rejected",
+  "description": "Un admin rechazó la verificación. El comercio puede corregir y reenviar.",
+  "x-exchange": "festa.user",
+  "x-routing-key": "merchant.rejected",
+  "x-producer": "user-service",
+  "x-version": 1,
+  "x-consumers": {
+    "notification-service": "avisa al comercio con el motivo"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "merchantId",
+    "userId",
+    "reason",
+    "rejectedBy",
+    "rejectedAt"
+  ],
+  "properties": {
+    "merchantId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "rejectedBy": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "rejectedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "merchantId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "userId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+      "reason": "No se pudo validar la dirección",
+      "rejectedBy": "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b",
+      "rejectedAt": "2026-10-25T09:00:00Z"
+    }
+  ]
+}
