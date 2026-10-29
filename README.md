@@ -30,6 +30,11 @@ Los servicios se construyen desde las carpetas hermanas (`../festa-<servicio>`),
 
 Los scripts de `postgres/init` y `mongo/init` solo corren con el volumen vacío. Para recrear: `docker compose down -v`.
 
+## Secretos
+
+Ver [SECRETS.md](SECRETS.md): qué pasa con cada secreto en local, en CI y cuando haya un entorno
+real desplegado.
+
 ## Contratos
 
 Ver [contracts/README.md](contracts/README.md). Validar después de cualquier cambio:
