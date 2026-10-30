@@ -4,14 +4,16 @@ Ningún secreto real vive en el código. Esto es lo que hay en cada etapa y por 
 
 ## 1. Desarrollo local
 
-- `.env.example` (en este repo y en cada `festa-*-service`) es el **contrato**: lista todas las
-  variables que existen, con valores de ejemplo (`change-me-*`, `prv_test_xxx`, etc.), y sí se
-  versiona.
-- `.env` es la copia con los valores reales de cada quien. Está en `.gitignore` en los 12 repos y
-  nunca se sube.
-- `./scripts/gen-secrets.sh` genera lo que no puede ser un valor fijo de ejemplo: las llaves JWT
-  RS256, el secreto de firma del QR y `PII_ENCRYPTION_KEY`. Quedan en `./secrets/`, también
-  ignorado por git.
+- `.env.example` es el **contrato**: lista todas las variables que existen, con valores de
+  ejemplo (`change-me-*`, `prv_test_xxx`, etc.), y sí se versiona. Hoy solo lo tienen los repos
+  que ya tienen código con secretos propios: `festa-infra`, `festa-auth-service` y
+  `festa-event-service`. Los demás `festa-*-service` lo necesitan cuando dejen de ser un README.
+- `.env` es la copia con los valores reales de cada quien. Está en `.gitignore` en los repos que
+  tienen `.env.example`, y nunca se sube.
+- `./scripts/gen-secrets.sh` genera lo que no puede ser un valor fijo de ejemplo:
+  - Las llaves JWT RS256 y el secreto de firma del QR quedan en `./secrets/`, ignorado por git.
+  - `PII_ENCRYPTION_KEY` es la excepción: se escribe directo en `.env` (sustituye el valor vacío
+    de la plantilla), no en `./secrets/` — ver `scripts/gen-secrets.sh`.
 - Verificado (2026-10-29): en el historial completo de los 12 repos no hay ningún `.env` real ni
   ningún archivo de `secrets/` commiteado — solo los `.env.example` con placeholders.
 
