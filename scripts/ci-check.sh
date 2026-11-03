@@ -21,29 +21,54 @@ mongo_as() {
   dc exec -T mongo mongosh --quiet -u "$1" -p "$2" --authenticationDatabase "$3" "$3" --eval "$4" 2>/dev/null
 }
 
+PG_SERVICES="auth user event booking payment"
+MONGO_SERVICES="ai notification analytics"
+pg_password() { env_get "$(echo "$1" | tr '[:lower:]' '[:upper:]')_DB_PASSWORD"; }
+mongo_password() { env_get "$(echo "$1" | tr '[:lower:]' '[:upper:]')_MONGO_PASSWORD"; }
+
 echo "Postgres: una BD y un usuario por servicio"
-for svc in auth user event booking payment; do
-  pw=$(env_get "$(echo "$svc" | tr '[:lower:]' '[:upper:]')_DB_PASSWORD")
-  [ "$(psql_as "${svc}_svc" "$pw" "${svc}_db" 'select 1')" = 1 ] && ok "${svc}_svc entra a ${svc}_db" || ko "${svc}_svc no entra a ${svc}_db"
+for svc in $PG_SERVICES; do
+  [ "$(psql_as "${svc}_svc" "$(pg_password "$svc")" "${svc}_db" 'select 1')" = 1 ] && ok "${svc}_svc entra a ${svc}_db" || ko "${svc}_svc no entra a ${svc}_db"
 done
-if psql_as auth_svc "$(env_get AUTH_DB_PASSWORD)" user_db 'select 1' >/dev/null; then
-  ko "auth_svc entra a user_db (no hay aislamiento)"
-else
-  ok "auth_svc no puede entrar a user_db (aislamiento)"
-fi
-psql_as event_svc "$(env_get EVENT_DB_PASSWORD)" event_db 'select postgis_version()' | grep -q . \
+
+echo "Postgres: aislamiento entre TODOS los pares de servicios (no solo uno)"
+for svc in $PG_SERVICES; do
+  pw=$(pg_password "$svc")
+  for other in $PG_SERVICES; do
+    [ "$svc" = "$other" ] && continue
+    if psql_as "${svc}_svc" "$pw" "${other}_db" 'select 1' >/dev/null; then
+      ko "${svc}_svc entra a ${other}_db (no hay aislamiento)"
+    else
+      ok "${svc}_svc no puede entrar a ${other}_db"
+    fi
+  done
+done
+
+psql_as event_svc "$(pg_password event)" event_db 'select postgis_version()' | grep -q . \
   && ok "PostGIS disponible en event_db" || ko "PostGIS no está en event_db"
 
 echo "Mongo: una BD y un usuario por servicio"
-for svc in ai notification analytics; do
-  pw=$(env_get "$(echo "$svc" | tr '[:lower:]' '[:upper:]')_MONGO_PASSWORD")
-  [ "$(mongo_as "${svc}_svc" "$pw" "${svc}_db" 'db.runCommand({ping: 1}).ok')" = 1 ] && ok "${svc}_svc entra a ${svc}_db" || ko "${svc}_svc no entra a ${svc}_db"
+for svc in $MONGO_SERVICES; do
+  [ "$(mongo_as "${svc}_svc" "$(mongo_password "$svc")" "${svc}_db" 'db.runCommand({ping: 1}).ok')" = 1 ] && ok "${svc}_svc entra a ${svc}_db" || ko "${svc}_svc no entra a ${svc}_db"
 done
-if mongo_as ai_svc "$(env_get AI_MONGO_PASSWORD)" ai_db "db.getSiblingDB('analytics_db').ci.insertOne({a: 1})" >/dev/null; then
-  ko "ai_svc escribe en analytics_db (no hay aislamiento)"
-else
-  ok "ai_svc no puede escribir en analytics_db (aislamiento)"
-fi
+
+echo "Mongo: aislamiento entre TODOS los pares de servicios (lectura y escritura)"
+for svc in $MONGO_SERVICES; do
+  pw=$(mongo_password "$svc")
+  for other in $MONGO_SERVICES; do
+    [ "$svc" = "$other" ] && continue
+    if mongo_as "${svc}_svc" "$pw" "${svc}_db" "db.getSiblingDB('${other}_db').ci.insertOne({a: 1})" >/dev/null; then
+      ko "${svc}_svc escribe en ${other}_db (no hay aislamiento)"
+    else
+      ok "${svc}_svc no puede escribir en ${other}_db"
+    fi
+    if mongo_as "${svc}_svc" "$pw" "${svc}_db" "db.getSiblingDB('${other}_db').ci.findOne()" >/dev/null; then
+      ko "${svc}_svc lee ${other}_db (no hay aislamiento)"
+    else
+      ok "${svc}_svc no puede leer ${other}_db"
+    fi
+  done
+done
 
 echo "Redis"
 [ "$(dc exec -T redis redis-cli --no-auth-warning -a "$(env_get REDIS_PASSWORD)" ping)" = PONG ] && ok "responde con contraseña" || ko "no responde con contraseña"
