@@ -69,3 +69,14 @@ variable "log_retention_days" {
   type        = number
   default     = 3
 }
+
+variable "desired_counts" {
+  description = "Réplicas por servicio; gana sobre services_desired_count. Sirve para levantar solo los servicios que ya tienen imagen en GHCR. Ej.: { auth = 1, gateway = 1, user = 0, event = 0 }."
+  type        = map(number)
+  default     = {}
+
+  validation {
+    condition     = alltrue([for k in keys(var.desired_counts) : contains(["auth", "user", "event", "gateway"], k)])
+    error_message = "desired_counts solo acepta auth, user, event y gateway."
+  }
+}

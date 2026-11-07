@@ -30,7 +30,7 @@ resource "random_bytes" "pii_key" {
 
 locals {
   secret_values = {
-    JWT_PRIVATE_KEY     = tls_private_key.jwt.private_key_pem
+    JWT_PRIVATE_KEY     = tls_private_key.jwt.private_key_pem_pkcs8 # PKCS#8, como openssl genpkey; auth-service no lee PKCS#1
     JWT_PUBLIC_KEY      = tls_private_key.jwt.public_key_pem
     PII_ENCRYPTION_KEY  = random_bytes.pii_key.base64
     ADMIN_PASSWORD      = random_password.admin.result
