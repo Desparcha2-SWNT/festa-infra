@@ -1,0 +1,129 @@
+# Despliegue en el AWS Academy Learner Lab con Terraform (SCRUM-134, ADR 0001).
+#
+# Credenciales: el Learner Lab no deja crear un proveedor OIDC ni roles IAM, así que el workflow usa las
+# credenciales temporales de la sesión del lab, guardadas como secrets del environment `aws-lab`
+# (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY y AWS_SESSION_TOKEN). Vencen con la sesión (unas 4 horas):
+# antes de desplegar, actualízalas con scripts/aws-lab/set-github-creds.sh.
+#
+# Se lanza a mano (Actions → Deploy AWS lab → Run workflow) o desde el CD de un servicio con
+# repository_dispatch (tipo `deploy-lab`, payload {"service": "auth", "tag": "sha-1a2b3c4"}).
+name: Deploy AWS lab
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: apply levanta o actualiza el entorno; destroy lo borra (hacerlo siempre al terminar la demo)
+        type: choice
+        options: [plan, apply, destroy]
+        default: plan
+      image_tag:
+        description: Tag de imagen para todos los servicios
+        type: string
+        default: latest
+      services_desired_count:
+        description: Réplicas por servicio (0 = solo la base)
+        type: string
+        default: "1"
+  repository_dispatch:
+    types: [deploy-lab]
+
+permissions:
+  contents: read
+
+# Un solo despliegue a la vez: Terraform además bloquea el estado con use_lockfile.
+concurrency:
+  group: deploy-aws-lab
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action || 'apply' }}
+    runs-on: ubuntu-latest
+    # El environment guarda las credenciales y puede exigir aprobación manual antes de correr.
+    environment: aws-lab
+    defaults:
+      run:
+        working-directory: terraform/aws-lab
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+          terraform_wrapper: false
+
+      - name: Verificar las credenciales del lab
+        run: |
+          if ! aws sts get-caller-identity >/dev/null 2>&1; then
+            echo "::error::Las credenciales del Learner Lab vencieron o no están. Enciende el lab y corre scripts/aws-lab/set-github-creds.sh."
+            exit 1
+          fi
+
+      - name: Parámetros
+        id: params
+        env:
+          ACTION: ${{ github.event.inputs.action || 'apply' }}
+          TAG: ${{ github.event.inputs.image_tag || 'latest' }}
+          COUNT: ${{ github.event.inputs.services_desired_count || '1' }}
+          SERVICE: ${{ github.event.client_payload.service }}
+          SERVICE_TAG: ${{ github.event.client_payload.tag }}
+        run: |
+          # Los valores terminan en la línea de comandos de terraform: solo se aceptan formatos conocidos.
+          case "$ACTION" in plan|apply|destroy) ;; *) echo "::error::acción inválida: $ACTION"; exit 1;; esac
+          case "$COUNT" in ''|*[!0-9]*) echo "::error::services_desired_count debe ser un número"; exit 1;; esac
+          case "$TAG" in latest|sha-[0-9a-f]*) ;; *) echo "::error::image_tag debe ser latest o sha-<commit>"; exit 1;; esac
+          case "$TAG" in *[!a-z0-9-]*) echo "::error::image_tag inválido: $TAG"; exit 1;; esac
+          args="-var image_tag=$TAG -var services_desired_count=$COUNT"
+          # Desde el CD de un servicio: solo ese servicio cambia de tag.
+          if [ -n "$SERVICE" ]; then
+            case "$SERVICE" in auth|user|event|gateway) ;; *) echo "::error::servicio desconocido: $SERVICE"; exit 1;; esac
+            case "$SERVICE_TAG" in latest|sha-[0-9a-f]*) ;; *) echo "::error::tag inválido: $SERVICE_TAG"; exit 1;; esac
+            case "$SERVICE_TAG" in *[!a-z0-9-]*) echo "::error::tag inválido: $SERVICE_TAG"; exit 1;; esac
+            args="$args -var image_tags={\"$SERVICE\"=\"$SERVICE_TAG\"}"
+          fi
+          echo "action=$ACTION" >> "$GITHUB_OUTPUT"
+          echo "args=$args" >> "$GITHUB_OUTPUT"
+
+      - name: Bucket del estado
+        id: state
+        working-directory: .
+        run: echo "bucket=$(./scripts/aws-lab/bootstrap-state.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: terraform init
+        run: |
+          terraform init -backend-config="bucket=${{ steps.state.outputs.bucket }}" \
+            -backend-config="key=lab/terraform.tfstate" -backend-config="region=$AWS_REGION"
+
+      - name: terraform plan
+        if: steps.params.outputs.action != 'destroy'
+        run: terraform plan ${{ steps.params.outputs.args }} -out=tfplan
+
+      - name: terraform apply
+        if: steps.params.outputs.action == 'apply'
+        run: terraform apply tfplan
+
+      - name: terraform destroy
+        if: steps.params.outputs.action == 'destroy'
+        run: terraform destroy -auto-approve ${{ steps.params.outputs.args }}
+
+      - name: Resumen
+        if: steps.params.outputs.action == 'apply'
+        run: |
+          url=$(terraform output -raw api_base_url)
+          {
+            echo "### Festa desplegado en el Learner Lab"
+            echo ""
+            echo "API: $url (es la API_BASE_URL de festa-mobile)"
+            echo ""
+            echo "Al terminar la demo, corre este workflow con **destroy**: el lab sigue cobrando créditos aunque se cierre la sesión."
+          } >> "$GITHUB_STEP_SUMMARY"

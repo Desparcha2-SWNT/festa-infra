@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/payment/order.refund_requested.schema.json",
+  "title": "order.refund_requested",
+  "description": "La orden aprobada debe reembolsarse (p. ej. el evento se canceló). Queda pendiente de que un admin la cierre.",
+  "x-exchange": "festa.payment",
+  "x-routing-key": "order.refund_requested",
+  "x-producer": "payment-service",
+  "x-version": 1,
+  "x-consumers": {
+    "notification-service": "avisa al comprador que su reembolso está en trámite",
+    "analytics-service": "reembolsos pendientes"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "orderId",
+    "eventId",
+    "buyerId",
+    "amountCents",
+    "reason",
+    "requestedAt"
+  ],
+  "properties": {
+    "orderId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "buyerId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "amountCents": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "event_cancelled",
+        "admin"
+      ]
+    },
+    "requestedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "orderId": "e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b",
+      "eventId": "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a",
+      "buyerId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "amountCents": 5400000,
+      "reason": "event_cancelled",
+      "requestedAt": "2026-11-06T20:00:05Z"
+    }
+  ]
+}

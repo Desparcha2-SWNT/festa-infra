@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/event/event.updated.schema.json",
+  "title": "event.updated",
+  "description": "Cambió un evento (incluye ocultar/mostrar por moderación). Snapshot completo, no diff.",
+  "x-exchange": "festa.event",
+  "x-routing-key": "event.updated",
+  "x-producer": "event-service",
+  "x-version": 1,
+  "x-consumers": {
+    "booking-service": "actualiza proyección",
+    "payment-service": "actualiza proyección (hidden = no vender)",
+    "ai-service": "actualiza catálogo",
+    "analytics-service": "actualiza metadatos"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "organizerId",
+    "organizerType",
+    "title",
+    "description",
+    "category",
+    "startsAt",
+    "endsAt",
+    "venue",
+    "capacity",
+    "ticketed",
+    "priceCents",
+    "currency",
+    "featured",
+    "isLive",
+    "status",
+    "version",
+    "updatedAt"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "organizerId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "sub del usuario que creó el evento"
+    },
+    "organizerType": {
+      "type": "string",
+      "enum": [
+        "user",
+        "merchant"
+      ]
+    },
+    "merchantId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Presente si organizerType = merchant"
+    },
+    "organizerName": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Nombre visible (comercio o persona), denormalizado"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "descriptionAiGenerated": {
+      "type": "boolean",
+      "description": "RF9: la descripción salió de la IA"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "cultural",
+        "musical",
+        "deportivo",
+        "gastronomico"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "maxLength": 30
+      }
+    },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "venue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "address",
+        "location"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lat",
+            "lng"
+          ],
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lng": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          }
+        }
+      }
+    },
+    "capacity": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "null = sin límite (solo eventos sin boletería)"
+    },
+    "ticketed": {
+      "type": "boolean",
+      "description": "true solo si el organizador es merchant verificado"
+    },
+    "priceCents": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Precio por boleta en centavos COP; 0 si no es ticketed"
+    },
+    "maxTicketsPerOrder": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "currency": {
+      "const": "COP"
+    },
+    "featured": {
+      "type": "boolean",
+      "description": "Reservado para pago por visibilidad (futuro). Siempre false por ahora."
+    },
+    "isLive": {
+      "type": "boolean",
+      "description": "RF19 Parche en Vivo: inicia en < 2 h y expira solo"
+    },
+    "coverImageUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "hidden",
+        "cancelled",
+        "expired"
+      ],
+      "description": "hidden = oculto por moderación (reversible)"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Se incrementa en cada cambio; los consumidores ignoran versiones <= la guardada"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "eventId": "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a",
+      "organizerId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+      "organizerType": "merchant",
+      "merchantId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "organizerName": "Café Bohemio",
+      "title": "Noche de jazz en La Candelaria",
+      "description": "Una noche de jazz en vivo...",
+      "descriptionAiGenerated": true,
+      "category": "musical",
+      "tags": [
+        "jazz",
+        "en vivo"
+      ],
+      "startsAt": "2026-11-07T01:00:00Z",
+      "endsAt": "2026-11-07T04:00:00Z",
+      "venue": {
+        "name": "Café Bohemio",
+        "address": "Cl. 11 #3-45, Bogotá",
+        "location": {
+          "lat": 4.5981,
+          "lng": -74.0758
+        }
+      },
+      "capacity": 80,
+      "ticketed": true,
+      "priceCents": 2500000,
+      "maxTicketsPerOrder": 4,
+      "currency": "COP",
+      "featured": false,
+      "isLive": false,
+      "coverImageUrl": null,
+      "status": "published",
+      "version": 1,
+      "updatedAt": "2026-10-28T15:00:00Z"
+    }
+  ]
+}

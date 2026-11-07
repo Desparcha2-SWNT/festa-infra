@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/user/profile.updated.schema.json",
+  "title": "profile.updated",
+  "description": "Cambiaron nombre, intereses o zona preferida del usuario.",
+  "x-exchange": "festa.user",
+  "x-routing-key": "profile.updated",
+  "x-producer": "user-service",
+  "x-version": 1,
+  "x-consumers": {
+    "ai-service": "contexto para recomendaciones",
+    "notification-service": "segmentar push por intereses"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "userId",
+    "displayName",
+    "interests",
+    "updatedAt"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "displayName": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "interests": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "cultural",
+          "musical",
+          "deportivo",
+          "gastronomico"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "homeZone": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "Barrio/zona preferida escrita por el usuario (no es ubicación GPS)"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "userId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "displayName": "Ana Pérez",
+      "interests": [
+        "musical",
+        "gastronomico"
+      ],
+      "homeZone": "Usaquén",
+      "updatedAt": "2026-10-24T15:05:00Z"
+    }
+  ]
+}

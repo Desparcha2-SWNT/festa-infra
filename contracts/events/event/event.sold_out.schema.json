@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/event/event.sold_out.schema.json",
+  "title": "event.sold_out",
+  "description": "attendeeCount alcanzó el cupo.",
+  "x-exchange": "festa.event",
+  "x-routing-key": "event.sold_out",
+  "x-producer": "event-service",
+  "x-version": 1,
+  "x-consumers": {
+    "ai-service": "no lo recomienda",
+    "analytics-service": "registra cuándo se agotó"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "capacity",
+    "soldOutAt"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "capacity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "soldOutAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "eventId": "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a",
+      "capacity": 80,
+      "soldOutAt": "2026-11-05T22:00:00Z"
+    }
+  ]
+}

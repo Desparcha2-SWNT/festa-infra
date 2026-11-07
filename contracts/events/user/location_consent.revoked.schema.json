@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/user/location_consent.revoked.schema.json",
+  "title": "location_consent.revoked",
+  "description": "RNF5: el usuario retiró el consentimiento. Hay que borrar la ubicación guardada.",
+  "x-exchange": "festa.user",
+  "x-routing-key": "location_consent.revoked",
+  "x-producer": "user-service",
+  "x-version": 1,
+  "x-consumers": {
+    "notification-service": "borra la última ubicación y deja de enviar push por cercanía",
+    "ai-service": "deja de usar ubicación"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "userId",
+    "revokedAt"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "revokedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "userId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "revokedAt": "2026-11-02T09:00:00Z"
+    }
+  ]
+}

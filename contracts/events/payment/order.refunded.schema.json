@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/payment/order.refunded.schema.json",
+  "title": "order.refunded",
+  "description": "Un admin registró que el reembolso se hizo.",
+  "x-exchange": "festa.payment",
+  "x-routing-key": "order.refunded",
+  "x-producer": "payment-service",
+  "x-version": 1,
+  "x-consumers": {
+    "booking-service": "revoca los pases de la orden",
+    "notification-service": "confirma al comprador",
+    "analytics-service": "descuenta ingresos"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "orderId",
+    "eventId",
+    "buyerId",
+    "amountCents",
+    "refundedBy",
+    "refundedAt"
+  ],
+  "properties": {
+    "orderId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "buyerId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "amountCents": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "refundedBy": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reference": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "refundedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "orderId": "e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b",
+      "eventId": "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a",
+      "buyerId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "amountCents": 5400000,
+      "refundedBy": "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b",
+      "reference": "Nequi 3001234567",
+      "refundedAt": "2026-11-08T10:00:00Z"
+    }
+  ]
+}

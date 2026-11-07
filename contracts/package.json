@@ -1,0 +1,13 @@
+{
+  "name": "festa-contracts",
+  "private": true,
+  "type": "module",
+  "description": "Valida los contratos de RabbitMQ de Festa",
+  "scripts": {
+    "validate": "node scripts/validate.mjs"
+  },
+  "devDependencies": {
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/event/engagement.shared.schema.json",
+  "title": "engagement.shared",
+  "description": "RF13: alguien compartió el evento con el share nativo.",
+  "x-exchange": "festa.event",
+  "x-routing-key": "engagement.shared",
+  "x-producer": "event-service",
+  "x-version": 1,
+  "x-consumers": {
+    "analytics-service": "cuenta compartidos"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "sharedBy",
+    "sharedAt"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sharedBy": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sharedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "eventId": "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a",
+      "sharedBy": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "sharedAt": "2026-10-29T20:05:00Z"
+    }
+  ]
+}

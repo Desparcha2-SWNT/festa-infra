@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/event/event.rescheduled.schema.json",
+  "title": "event.rescheduled",
+  "description": "Cambio crítico de fecha/hora o lugar. Además del event.updated, para avisar a los asistentes.",
+  "x-exchange": "festa.event",
+  "x-routing-key": "event.rescheduled",
+  "x-producer": "event-service",
+  "x-version": 1,
+  "x-consumers": {
+    "notification-service": "avisa a los asistentes confirmados y reprograma recordatorios",
+    "analytics-service": "cuenta reprogramaciones"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "title",
+    "previousStartsAt",
+    "startsAt",
+    "endsAt",
+    "previousVenue",
+    "venue",
+    "version",
+    "rescheduledAt"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "previousStartsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "endsAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "previousVenue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "address",
+        "location"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lat",
+            "lng"
+          ],
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lng": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          }
+        }
+      }
+    },
+    "venue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "address",
+        "location"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lat",
+            "lng"
+          ],
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lng": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          }
+        }
+      }
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "rescheduledAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "eventId": "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a",
+      "title": "Noche de jazz en La Candelaria",
+      "previousStartsAt": "2026-11-07T01:00:00Z",
+      "startsAt": "2026-11-08T01:00:00Z",
+      "endsAt": "2026-11-08T04:00:00Z",
+      "previousVenue": {
+        "name": "Café Bohemio",
+        "address": "Cl. 11 #3-45, Bogotá",
+        "location": {
+          "lat": 4.5981,
+          "lng": -74.0758
+        }
+      },
+      "venue": {
+        "name": "Café Bohemio",
+        "address": "Cl. 11 #3-45, Bogotá",
+        "location": {
+          "lat": 4.5981,
+          "lng": -74.0758
+        }
+      },
+      "version": 2,
+      "rescheduledAt": "2026-11-01T15:00:00Z"
+    }
+  ]
+}

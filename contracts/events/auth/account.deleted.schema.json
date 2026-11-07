@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/auth/account.deleted.schema.json",
+  "title": "account.deleted",
+  "description": "El usuario borró su cuenta (Ley 1581, derecho de supresión). Cada servicio borra o anonimiza sus datos personales.",
+  "x-exchange": "festa.auth",
+  "x-routing-key": "account.deleted",
+  "x-producer": "auth-service",
+  "x-version": 1,
+  "x-consumers": {
+    "user-service": "borra perfil, intereses y reportes hechos",
+    "event-service": "cancela sus eventos futuros y anonimiza el organizador",
+    "booking-service": "anonimiza asistencias y revoca pases futuros",
+    "payment-service": "anonimiza al comprador (las órdenes se conservan por contabilidad)",
+    "ai-service": "borra historial de chat y preferencias",
+    "notification-service": "borra tokens FCM y ubicación",
+    "analytics-service": "elimina el userId de sus agregados"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "userId",
+    "deletedAt"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "deletedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "userId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "deletedAt": "2026-12-01T10:00:00Z"
+    }
+  ]
+}

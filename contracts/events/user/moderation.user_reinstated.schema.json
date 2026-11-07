@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/user/moderation.user_reinstated.schema.json",
+  "title": "moderation.user_reinstated",
+  "description": "Un admin levantó la suspensión.",
+  "x-exchange": "festa.user",
+  "x-routing-key": "moderation.user_reinstated",
+  "x-producer": "user-service",
+  "x-version": 1,
+  "x-consumers": {
+    "auth-service": "habilita login",
+    "event-service": "vuelve a mostrar sus eventos vigentes",
+    "notification-service": "reanuda push"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "userId",
+    "decidedBy",
+    "decidedAt"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "decidedBy": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "decidedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "userId": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+      "decidedBy": "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b",
+      "decidedAt": "2026-11-10T12:00:00Z"
+    }
+  ]
+}

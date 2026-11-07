@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/user/report.resolved.schema.json",
+  "title": "report.resolved",
+  "description": "RF14: un admin cerró un reporte. Si hubo acción, además sale un moderation.*.",
+  "x-exchange": "festa.user",
+  "x-routing-key": "report.resolved",
+  "x-producer": "user-service",
+  "x-version": 1,
+  "x-consumers": {
+    "notification-service": "avisa a quien reportó",
+    "analytics-service": "tiempo de resolución"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reportId",
+    "reporterId",
+    "targetType",
+    "targetId",
+    "outcome",
+    "resolvedBy",
+    "resolvedAt"
+  ],
+  "properties": {
+    "reportId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reporterId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "targetType": {
+      "type": "string",
+      "enum": [
+        "event",
+        "user"
+      ]
+    },
+    "targetId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "dismissed",
+        "action_taken"
+      ]
+    },
+    "resolvedBy": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "resolvedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "reportId": "c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f",
+      "reporterId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "targetType": "event",
+      "targetId": "7a2d3c9f-4b2e-4d4f-8c1b-2a3f4e5d6c7b",
+      "outcome": "action_taken",
+      "resolvedBy": "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b",
+      "resolvedAt": "2026-10-26T12:00:00Z"
+    }
+  ]
+}

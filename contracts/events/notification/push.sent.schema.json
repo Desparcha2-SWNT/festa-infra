@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/notification/push.sent.schema.json",
+  "title": "push.sent",
+  "description": "Se envió un lote de push (alcance para el comercio y control de spam).",
+  "x-exchange": "festa.notification",
+  "x-routing-key": "push.sent",
+  "x-producer": "notification-service",
+  "x-version": 1,
+  "x-consumers": {
+    "analytics-service": "personas alcanzadas por evento"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "recipientCount",
+    "failedCount",
+    "sentAt"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "nearby_event",
+        "reminder",
+        "event_cancelled",
+        "event_rescheduled",
+        "ticket",
+        "merchant_status",
+        "report",
+        "admin",
+        "other"
+      ]
+    },
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "recipientCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failedCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sentAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "kind": "nearby_event",
+      "eventId": "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a",
+      "recipientCount": 57,
+      "failedCount": 2,
+      "sentAt": "2026-10-28T15:01:00Z"
+    }
+  ]
+}

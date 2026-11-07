@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/booking/attendance.cancelled.schema.json",
+  "title": "attendance.cancelled",
+  "description": "Se canceló una asistencia (el usuario, el evento se canceló, o reembolso). Sus pases quedan revocados.",
+  "x-exchange": "festa.booking",
+  "x-routing-key": "attendance.cancelled",
+  "x-producer": "booking-service",
+  "x-version": 1,
+  "x-consumers": {
+    "event-service": "actualiza attendeeCount",
+    "notification-service": "cancela recordatorios",
+    "analytics-service": "descuenta asistentes"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "attendanceId",
+    "eventId",
+    "userId",
+    "reason",
+    "revokedPassIds",
+    "attendeeCount",
+    "cancelledAt"
+  ],
+  "properties": {
+    "attendanceId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "user",
+        "event_cancelled",
+        "refunded",
+        "account_deleted"
+      ]
+    },
+    "revokedPassIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "attendeeCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cancelledAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "attendanceId": "d4e5f6a7-b8c9-4d0e-8f1a-2b3c4d5e6f7a",
+      "eventId": "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a",
+      "userId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "reason": "user",
+      "revokedPassIds": [
+        "f6a7b8c9-d0e1-4f2a-8b3c-4d5e6f7a8b9c",
+        "a7b8c9d0-e1f2-4a3b-8c4d-5e6f7a8b9c0d"
+      ],
+      "attendeeCount": 40,
+      "cancelledAt": "2026-10-31T18:00:00Z"
+    }
+  ]
+}
