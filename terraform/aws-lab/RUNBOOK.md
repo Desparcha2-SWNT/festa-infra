@@ -9,13 +9,16 @@ Guía paso a paso para levantar el entorno otro día, más todos los errores que
   Redis. La entrada fue HTTPS por API Gateway.
 - Se probó de punta a punta: registro, login, `account.registered` por RabbitMQ (user-service creó el perfil),
   intereses, y crear y leer un evento con PostGIS.
-- Al final se corrió el workflow con `destroy`, pero **la sesión del lab terminó a mitad** (error 28). Borró los
-  servicios, API Gateway, el ALB y Redis. **Quedaron RDS, el NLB interno, el clúster de ECS, el secreto, los
-  security groups y los logs**, y el estado de Terraform quedó **bloqueado**.
-- **Antes de cualquier otra cosa en la próxima sesión: hacer el paso 0** (terminar el destroy).
-- El bucket del estado (`festa-tfstate-<cuenta>`) no se borra a propósito.
+- Al final se corrió el workflow con `destroy`, pero **la sesión del lab terminó a mitad** (error 28). Quedaron
+  RDS, el NLB interno, el clúster de ECS, el secreto, los security groups y los logs, y el estado de Terraform
+  quedó bloqueado.
+- En la sesión siguiente se terminó con el procedimiento de abajo: se quitó el bloqueo y `terraform destroy`
+  borró los 33 recursos restantes. Se verificó en AWS que **no queda nada de Festa**, solo el bucket del estado
+  (`festa-tfstate-<cuenta>`), que no se borra a propósito. El entorno está limpio para volver a desplegar.
 
-## 0. Terminar el destroy del 7-nov-2026 (una sola vez)
+## Si un destroy quedó a medias
+
+Pasa si la sesión del lab termina mientras corre `destroy` (error 28).
 
 1. Enciende el lab y carga las credenciales (paso 1 de abajo).
 2. Desde un equipo, en `terraform/aws-lab`, con las credenciales del lab:
@@ -150,7 +153,7 @@ sesión del lab. Todo prendido costaba unos **USD 0,17 por hora**. **No cierres 
 
 | # | Síntoma | Causa | Solución |
 |---|---|---|---|
-| 28 | `destroy` falla a mitad: `explicit deny … policy/voc-cancel-cred`, *Failed to save state* y *Error releasing the state lock* | La **sesión del lab terminó** (End Lab o venció) mientras corría `destroy`: el lab revoca las credenciales al instante | **No cerrar el lab hasta que el workflow termine en verde.** El `destroy` completo tarda unos 10-15 minutos (RDS es lo más lento), así que debe quedar al menos media hora de sesión. Si pasa: paso 0 de arriba (borrar `lab/terraform.tfstate.tflock` y repetir `destroy`) |
+| 28 | `destroy` falla a mitad: `explicit deny … policy/voc-cancel-cred`, *Failed to save state* y *Error releasing the state lock* | La **sesión del lab terminó** (End Lab o venció) mientras corría `destroy`: el lab revoca las credenciales al instante | **No cerrar el lab hasta que el workflow termine en verde.** El `destroy` completo tarda unos 10-15 minutos (RDS es lo más lento), así que debe quedar al menos media hora de sesión. Si pasa: sección "Si un destroy quedó a medias" (borrar `lab/terraform.tfstate.tflock` y repetir `destroy`) |
 
 ## Antes de distribuir el APK
 
