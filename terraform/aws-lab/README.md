@@ -3,6 +3,8 @@
 Terraform que levanta Festa en AWS (SCRUM-134, ADR 0001). Lo corre el workflow
 [`Deploy AWS lab`](../../.github/workflows/deploy-lab.yml), o una persona desde su equipo.
 
+**Para volver a desplegar paso a paso, y con todos los errores conocidos y su solución: [RUNBOOK.md](RUNBOOK.md).**
+
 ## Qué crea
 
 ```
