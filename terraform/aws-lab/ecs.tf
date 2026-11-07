@@ -229,6 +229,7 @@ resource "aws_ecs_service" "rabbitmq" {
   task_definition = aws_ecs_task_definition.rabbitmq.arn
   desired_count   = 1
   launch_type     = "FARGATE"
+  # ECS lee los secretos solo al arrancar la tarea: si cambia el secreto, se redespliega.  force_new_deployment = true  triggers = {    secret_version = aws_secretsmanager_secret_version.app.version_id  }
 
   # Un solo broker: se apaga el viejo antes de arrancar el nuevo.
   deployment_minimum_healthy_percent = 0
@@ -280,8 +281,9 @@ resource "aws_ecs_service" "service" {
   name            = each.key
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.service[each.key].arn
-  desired_count   = var.services_desired_count
+  desired_count   = lookup(var.desired_counts, each.key, var.services_desired_count)
   launch_type     = "FARGATE"
+  # ECS lee los secretos solo al arrancar la tarea: si cambia el secreto, se redespliega.  force_new_deployment = true  triggers = {    secret_version = aws_secretsmanager_secret_version.app.version_id  }
 
   # Spring Boot tarda en arrancar con media vCPU: margen antes de que cuenten los health checks.
   health_check_grace_period_seconds = 180
@@ -342,8 +344,9 @@ resource "aws_ecs_service" "gateway" {
   name            = "gateway"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.gateway.arn
-  desired_count   = var.services_desired_count
+  desired_count   = lookup(var.desired_counts, "gateway", var.services_desired_count)
   launch_type     = "FARGATE"
+  # ECS lee los secretos solo al arrancar la tarea: si cambia el secreto, se redespliega.  force_new_deployment = true  triggers = {    secret_version = aws_secretsmanager_secret_version.app.version_id  }
 
   health_check_grace_period_seconds = 60
 
