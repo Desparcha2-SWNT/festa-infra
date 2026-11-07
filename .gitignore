@@ -2,3 +2,10 @@
 secrets/
 *.pem
 node_modules/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
