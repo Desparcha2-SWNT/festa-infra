@@ -330,10 +330,12 @@ resource "aws_ecs_task_definition" "gateway" {
       { name = "AUTH_SERVICE_URL", value = local.internal_url["auth"] },
       { name = "USER_SERVICE_URL", value = local.internal_url["user"] },
       { name = "EVENT_SERVICE_URL", value = local.internal_url["event"] },
-      # El ALB es quien habla con Kong: sin esto, el rate limit por IP vería la IP del ALB y no la del cliente.
+      # IP real del cliente para el rate limit por IP. API Gateway no la pone en X-Forwarded-For hacia un VPC
+      # Link, así que la escribe en X-Real-IP (apigw.tf, sobrescribiendo lo que mande el cliente). Kong solo
+      # cree ese encabezado si la petición viene de la VPC (el ALB interno).
       { name = "KONG_TRUSTED_IPS", value = local.vpc_cidr },
-      { name = "KONG_REAL_IP_HEADER", value = "X-Forwarded-For" },
-      { name = "KONG_REAL_IP_RECURSIVE", value = "on" },
+      { name = "KONG_REAL_IP_HEADER", value = "X-Real-IP" },
+      { name = "KONG_REAL_IP_RECURSIVE", value = "off" },
     ]
     secrets          = [{ name = "JWT_PUBLIC_KEY", valueFrom = local.secret_ref["JWT_PUBLIC_KEY"] }]
     logConfiguration = local.log["gateway"]
@@ -367,5 +369,5 @@ resource "aws_ecs_service" "gateway" {
     container_port   = 8000
   }
 
-  depends_on = [aws_lb_listener.public_http]
+  depends_on = [aws_lb_listener.gateway_http]
 }

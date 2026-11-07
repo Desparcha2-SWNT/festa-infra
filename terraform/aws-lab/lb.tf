@@ -1,15 +1,14 @@
 # Balanceadores.
-# - ALB público: la única entrada desde internet, hacia Kong (festa-gateway).
+# - ALB interno: delante de Kong (festa-gateway). Desde internet solo se llega por API Gateway (apigw.tf),
+#   que termina HTTPS y entra a la VPC por un VPC Link. El ALB no tiene IP pública.
 # - NLB interno: reemplaza el DNS por nombre de servicio, porque el Learner Lab no permite Cloud Map. Cada
 #   servicio tiene un puerto (8081 auth, 8082 user, 8083 event) y RabbitMQ el 5672. Kong recibe estas URLs
 #   por variables de entorno (festa-gateway#5). Es NLB y no ALB porque AMQP es TCP, no HTTP.
 
-# Excepción revisada: es la entrada pública de la API, tiene que ser accesible desde internet.
-#trivy:ignore:AVD-AWS-0053
-resource "aws_lb" "public" {
-  name                       = "${local.name}-public"
+resource "aws_lb" "gateway" {
+  name                       = "${local.name}-alb"
   load_balancer_type         = "application"
-  internal                   = false
+  internal                   = true
   security_groups            = [aws_security_group.alb.id]
   subnets                    = local.subnet_ids
   drop_invalid_header_fields = true
@@ -34,11 +33,12 @@ resource "aws_lb_target_group" "gateway" {
   }
 }
 
-# Excepción TEMPORAL: no hay dominio propio para pedir un certificado de ACM. El siguiente paso es poner
-# CloudFront delante del ALB, que da HTTPS con su dominio por defecto (ver README, "Pendiente").
+# Excepción revisada: el HTTPS del cliente termina en API Gateway, con certificado de AWS. Este listener
+# solo recibe tráfico del VPC Link, dentro de la VPC, como el NLB interno. Un certificado propio necesitaría
+# un dominio, y el Learner Lab no permite CloudFront.
 #trivy:ignore:AVD-AWS-0054
-resource "aws_lb_listener" "public_http" {
-  load_balancer_arn = aws_lb.public.arn
+resource "aws_lb_listener" "gateway_http" {
+  load_balancer_arn = aws_lb.gateway.arn
   port              = 80
   protocol          = "HTTP"
 

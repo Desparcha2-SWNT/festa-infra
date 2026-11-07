@@ -1,6 +1,6 @@
 output "api_base_url" {
-  description = "URL pública del gateway. Es la API_BASE_URL de festa-mobile."
-  value       = "http://${aws_lb.public.dns_name}"
+  description = "URL pública (HTTPS) de la API. Es la API_BASE_URL de festa-mobile."
+  value       = aws_apigatewayv2_api.main.api_endpoint
 }
 
 output "internal_nlb" {

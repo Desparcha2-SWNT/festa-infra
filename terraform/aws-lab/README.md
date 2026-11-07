@@ -6,8 +6,8 @@ Terraform que levanta Festa en AWS (SCRUM-134, ADR 0001). Lo corre el workflow
 ## Qué crea
 
 ```
-internet ──► ALB público :80 ──► Kong (festa-gateway) ──► NLB interno ──► auth :8081 · user :8082 · event :8083
-                                                                     └──► RabbitMQ :5672
+internet ──HTTPS──► API Gateway ──VPC Link──► ALB interno ──► Kong (festa-gateway) ──► NLB interno ──► auth :8081 · user :8082 · event :8083
+                                                                                                └──► RabbitMQ :5672
                     servicios ──► RDS PostgreSQL 16 (una base y un usuario por servicio)
                     user-service ──► ElastiCache Redis (db 2)
 ```
@@ -15,7 +15,8 @@ internet ──► ALB público :80 ──► Kong (festa-gateway) ──► NLB
 | Pieza | Servicio de AWS | Notas |
 |---|---|---|
 | Cómputo | ECS Fargate | Un servicio de ECS por microservicio, con las imágenes de GHCR |
-| Entrada | ALB público (HTTP) | Solo llega a Kong. Kong ve la IP real del cliente (`X-Forwarded-For`) |
+| Entrada | API Gateway (HTTP API) | HTTPS con certificado de AWS (`https://<id>.execute-api.us-east-1.amazonaws.com`). Límite global de 100 req/s (picos de 200) y logs de acceso en `/apigw/festa-lab`. Corta a los 30 s |
+| Hacia Kong | VPC Link → ALB interno | El ALB no tiene IP pública. API Gateway escribe la IP del cliente en `X-Real-IP` (sobrescribiendo la que mande el cliente) y Kong la usa para el rate limit por IP |
 | Entre servicios | NLB interno | Un puerto por servicio. Reemplaza el DNS por nombre (ver restricciones) |
 | PostgreSQL | RDS `db.t3.micro`, cifrado en reposo | `db-init.sh` crea las bases y usuarios, como `postgres/init` del compose |
 | Redis | ElastiCache `cache.t3.micro` | Un nodo, sin modo clúster, para poder usar las bases 0, 1 y 2 |
@@ -31,8 +32,10 @@ internet ──► ALB público :80 ──► Kong (festa-gateway) ──► NLB
 - **No se pueden crear roles IAM ni un proveedor OIDC**: todo usa `LabRole`, y GitHub Actions entra con las
   credenciales temporales de la sesión del lab.
 - **RDS solo hasta tamaño medium** y solo las regiones us-east-1 y us-west-2.
+- **No hay CloudFront** (AccessDenied) ni dominio propio para un certificado de ACM: el HTTPS lo da API
+  Gateway, que sí está permitido.
 - Las tareas usan las subredes públicas de la VPC por defecto con IP pública, para no pagar un NAT Gateway.
-  Nada entra desde internet salvo al ALB: lo impiden los security groups.
+  Nada entra desde internet salvo por API Gateway: lo impiden los security groups, y los balanceadores son internos.
 
 ## Desplegar
 
@@ -69,7 +72,6 @@ a `main`. Fargate las descarga sin credenciales, así que **los paquetes de GHCR
 
 ## Pendiente
 
-- HTTPS: el ALB solo escucha HTTP porque no hay dominio para un certificado de ACM. Android bloquea el tráfico
-  HTTP en los APK de release, así que hay que resolverlo antes de distribuir la app (CloudFront delante del
-  ALB da HTTPS con su dominio por defecto).
+- La URL de API Gateway cambia cada vez que el entorno se destruye y se vuelve a crear. Hay que actualizar la
+  variable `API_BASE_URL` de festa-mobile con la salida `api_base_url` antes de publicar un APK.
 - booking, payment, ai, notification y analytics: se agregan cuando existan sus imágenes.
