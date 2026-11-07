@@ -24,17 +24,37 @@ locals {
   vpc_cidr   = data.aws_vpc.default.cidr_block
 }
 
-resource "aws_security_group" "alb" {
-  name        = "${local.name}-alb"
-  description = "ALB publico: HTTP desde internet hacia Kong"
+# Interfaces del VPC Link de API Gateway: solo hablan con el ALB interno.
+resource "aws_security_group" "vpc_link" {
+  name        = "${local.name}-vpc-link"
+  description = "VPC Link de API Gateway hacia el ALB interno"
   vpc_id      = data.aws_vpc.default.id
 
-  ingress {
-    description = "HTTP"
+  egress {
+    description = "Hacia el ALB interno"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [local.vpc_cidr]
+  }
+}
+
+resource "aws_security_group" "alb" {
+  # El nombre cambia junto con el ALB (de público a interno) para no chocar al reemplazarlo.
+  name        = "${local.name}-alb-internal"
+  description = "ALB interno: HTTP desde el VPC Link de API Gateway hacia Kong"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    description     = "HTTP desde el VPC Link"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.vpc_link.id]
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 
   # El ALB solo habla con Kong, dentro de la VPC.
