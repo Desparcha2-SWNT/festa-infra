@@ -184,8 +184,10 @@ services:
     ports: ["8081:8081"]
     depends_on: *depends-core
 
+  # Spring Boot, mismas variables que auth-service.
   user-service:
     <<: *service
+    mem_limit: 384m
     profiles: [user, all]
     build:
       context: ../festa-user-service
@@ -193,13 +195,21 @@ services:
         contracts: ./contracts
     environment:
       <<: *amqp-env
-      PORT: 8082
-      DATABASE_URL: postgres://user_svc:${USER_DB_PASSWORD}@postgres:5432/user_db
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://postgres:5432/user_db
+      DB_USER: user_svc
+      DB_PASSWORD: ${USER_DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DATABASE: 2
+      AUTH_BASE_URL: http://auth-service:8081
       PII_ENCRYPTION_KEY: ${PII_ENCRYPTION_KEY}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
     ports: ["8082:8082"]
-    depends_on: *depends-core
+    depends_on:
+      <<: *depends-core
+      redis: { condition: service_healthy }
 
   event-service:
     <<: *service

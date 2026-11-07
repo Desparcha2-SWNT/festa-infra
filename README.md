@@ -8,7 +8,7 @@ Infraestructura local de Festa (Docker Compose) y **contratos de mensajería** d
 |---|---|---|
 | Postgres 16 + PostGIS | 5432 | Una BD + un usuario por servicio: `auth_db`, `user_db`, `event_db` (PostGIS), `booking_db`, `payment_db` |
 | Mongo 7 | 27017 | `ai_db`, `notification_db`, `analytics_db` |
-| Redis 7 | 6379 | Cache del mapa (db 0) y rate limit de IA (db 1) |
+| Redis 7 | 6379 | Cache del mapa (db 0), rate limit de IA (db 1) y cache de perfiles de user-service (db 2) |
 | RabbitMQ 3.13 | 5672 / UI 15672 | Topología cargada desde `contracts/rabbitmq/definitions.json` |
 | Prometheus | 9090 | Scrapea `/metrics` de todos los servicios, Kong y RabbitMQ |
 | Grafana | 3000 | Datasource Prometheus ya provisionado |
