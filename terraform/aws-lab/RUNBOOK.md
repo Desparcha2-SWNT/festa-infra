@@ -9,8 +9,26 @@ Guía paso a paso para levantar el entorno otro día, más todos los errores que
   Redis. La entrada fue HTTPS por API Gateway.
 - Se probó de punta a punta: registro, login, `account.registered` por RabbitMQ (user-service creó el perfil),
   intereses, y crear y leer un evento con PostGIS.
-- Al final se destruyó con el workflow (`destroy`). **El bucket del estado (`festa-tfstate-<cuenta>`) no se borra**
-  y queda listo para la próxima vez.
+- Al final se corrió el workflow con `destroy`, pero **la sesión del lab terminó a mitad** (error 28). Borró los
+  servicios, API Gateway, el ALB y Redis. **Quedaron RDS, el NLB interno, el clúster de ECS, el secreto, los
+  security groups y los logs**, y el estado de Terraform quedó **bloqueado**.
+- **Antes de cualquier otra cosa en la próxima sesión: hacer el paso 0** (terminar el destroy).
+- El bucket del estado (`festa-tfstate-<cuenta>`) no se borra a propósito.
+
+## 0. Terminar el destroy del 7-nov-2026 (una sola vez)
+
+1. Enciende el lab y carga las credenciales (paso 1 de abajo).
+2. Desde un equipo, en `terraform/aws-lab`, con las credenciales del lab:
+   ```bash
+   BUCKET=$(bash ../../scripts/aws-lab/bootstrap-state.sh)
+   terraform init -backend-config="bucket=$BUCKET" -backend-config="key=lab/terraform.tfstate" -backend-config="region=us-east-1"
+   # El bloqueo quedó colgado: el archivo de bloqueo es lab/terraform.tfstate.tflock en el bucket.
+   aws s3 rm "s3://$BUCKET/lab/terraform.tfstate.tflock"
+   terraform destroy
+   ```
+   `destroy` primero refresca: lo que ya no existe en AWS sale del estado sin error, y borra lo que quedó.
+3. Si algún recurso ya no existe y `destroy` falla por eso: `terraform state rm '<recurso>'` y repite.
+4. Comprueba en la consola de AWS que no queden RDS (`festa-lab`), balanceadores ni el clúster `festa-lab`.
 
 | Servicio | Imagen probada | Repo |
 |---|---|---|
@@ -74,9 +92,9 @@ curl -s $API/api/auth/me  -H "Authorization: Bearer $TOK"                  # 200
 curl -s $API/api/users/me -H "Authorization: Bearer $TOK"                  # 200: perfil creado por account.registered
 ```
 
-### 5. Apagar al terminar (obligatorio)
+### 5. Apagar al terminar (obligatorio, y sin cerrar el lab antes de tiempo)
 **Actions → Deploy AWS lab → Run workflow → `destroy`.** Los créditos se siguen gastando aunque se cierre la
-sesión del lab. Todo prendido costaba unos **USD 0,17 por hora**.
+sesión del lab. Todo prendido costaba unos **USD 0,17 por hora**. **No cierres el lab hasta que el run termine en verde** (error 28).
 
 ## Errores encontrados y su solución
 
@@ -127,6 +145,12 @@ sesión del lab. Todo prendido costaba unos **USD 0,17 por hora**.
 |---|---|---|
 | 26 | `aws` no encuentra credenciales o `terraform` no encuentra el plan | No usar `MSYS_NO_PATHCONV=1` con rutas `/c/...`: `aws.exe` y `terraform.exe` necesitan rutas de Windows (`C:\...`) |
 | 27 | `local-exec` corre otro bash | `interpreter = ["bash"]` y correr Terraform desde Git Bash, para que use su `bash` y no el de WSL |
+
+### Al apagar
+
+| # | Síntoma | Causa | Solución |
+|---|---|---|---|
+| 28 | `destroy` falla a mitad: `explicit deny … policy/voc-cancel-cred`, *Failed to save state* y *Error releasing the state lock* | La **sesión del lab terminó** (End Lab o venció) mientras corría `destroy`: el lab revoca las credenciales al instante | **No cerrar el lab hasta que el workflow termine en verde.** El `destroy` completo tarda unos 10-15 minutos (RDS es lo más lento), así que debe quedar al menos media hora de sesión. Si pasa: paso 0 de arriba (borrar `lab/terraform.tfstate.tflock` y repetir `destroy`) |
 
 ## Antes de distribuir el APK
 
