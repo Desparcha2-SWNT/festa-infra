@@ -43,7 +43,8 @@
         "cultural",
         "musical",
         "deportivo",
-        "gastronomico"
+        "gastronomico",
+        "otro"
       ]
     },
     "place": {
