@@ -97,3 +97,37 @@ jobs:
       - name: Apagar
         if: always()
         run: docker compose down -v
+
+  terraform:
+    name: Terraform (formato, validación y escaneo)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/aws-lab
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+          terraform_wrapper: false
+
+      - name: Formato
+        run: terraform fmt -check -recursive -diff
+
+      # Sin backend ni credenciales: solo valida la sintaxis y los tipos contra los providers.
+      - name: Validación
+        run: terraform init -backend=false && terraform validate
+
+      - name: ShellCheck de los scripts del despliegue
+        working-directory: .
+        run: shellcheck --severity=warning terraform/aws-lab/*.sh scripts/aws-lab/*.sh
+
+      # Configuraciones inseguras (security groups abiertos, cifrado, etc.). Los hallazgos HIGH o CRITICAL fallan.
+      - name: Escaneo de la configuración (Trivy)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: terraform/aws-lab
+          severity: HIGH,CRITICAL
+          exit-code: "1"
