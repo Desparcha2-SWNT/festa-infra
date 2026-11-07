@@ -97,7 +97,12 @@ jobs:
       - name: Bucket del estado
         id: state
         working-directory: .
-        run: echo "bucket=$(./scripts/aws-lab/bootstrap-state.sh)" >> "$GITHUB_OUTPUT"
+        # En una asignación, un error del script detiene el paso (dentro de un echo se perdería y el fallo
+        # aparecería recién en terraform init, con un "bucket vacío").
+        run: |
+          bucket=$(bash scripts/aws-lab/bootstrap-state.sh)
+          [ -n "$bucket" ] || { echo "::error::No se obtuvo el bucket del estado"; exit 1; }
+          echo "bucket=$bucket" >> "$GITHUB_OUTPUT"
 
       - name: terraform init
         run: |
