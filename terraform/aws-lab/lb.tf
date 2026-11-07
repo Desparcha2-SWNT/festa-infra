@@ -4,12 +4,15 @@
 #   servicio tiene un puerto (8081 auth, 8082 user, 8083 event) y RabbitMQ el 5672. Kong recibe estas URLs
 #   por variables de entorno (festa-gateway#5). Es NLB y no ALB porque AMQP es TCP, no HTTP.
 
+# Excepción revisada: es la entrada pública de la API, tiene que ser accesible desde internet.
+#trivy:ignore:AVD-AWS-0053
 resource "aws_lb" "public" {
-  name               = "${local.name}-public"
-  load_balancer_type = "application"
-  internal           = false
-  security_groups    = [aws_security_group.alb.id]
-  subnets            = local.subnet_ids
+  name                       = "${local.name}-public"
+  load_balancer_type         = "application"
+  internal                   = false
+  security_groups            = [aws_security_group.alb.id]
+  subnets                    = local.subnet_ids
+  drop_invalid_header_fields = true
 }
 
 resource "aws_lb_target_group" "gateway" {
@@ -31,6 +34,9 @@ resource "aws_lb_target_group" "gateway" {
   }
 }
 
+# Excepción TEMPORAL: no hay dominio propio para pedir un certificado de ACM. El siguiente paso es poner
+# CloudFront delante del ALB, que da HTTPS con su dominio por defecto (ver README, "Pendiente").
+#trivy:ignore:AVD-AWS-0054
 resource "aws_lb_listener" "public_http" {
   load_balancer_arn = aws_lb.public.arn
   port              = 80
