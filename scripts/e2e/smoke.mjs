@@ -28,6 +28,8 @@ const env = {
 const GATEWAY = process.env.GATEWAY_URL ?? 'http://localhost:8000';
 const DOMAIN = env.ALLOWED_EMAIL_DOMAIN || 'escuelaing.edu.co';
 const run = crypto.randomBytes(3).toString('hex');
+// Contraseña de los usuarios de prueba: nueva en cada corrida, con mayúscula, minúscula y número.
+const testPassword = `Festa-${crypto.randomBytes(6).toString('hex')}9`;
 
 let step = 0;
 const ok = (msg) => console.log(`  ✓ ${msg}`);
@@ -72,7 +74,7 @@ async function eventually(what, fn, { timeoutMs = 30_000 } = {}) {
 const register = async (name, accountType) => {
   const email = `${name}.${run}@${DOMAIN}`;
   const { data } = await api('POST', '/api/auth/register', {
-    body: { email, password: 'Festa2026x', displayName: `${name} ${run}`, accountType, acceptedPrivacyPolicy: true },
+    body: { email, password: testPassword, displayName: `${name} ${run}`, accountType, acceptedPrivacyPolicy: true },
   });
   return { token: data.accessToken, id: data.account.id, email };
 };
