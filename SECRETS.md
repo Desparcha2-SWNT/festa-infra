@@ -15,7 +15,7 @@ Ningún secreto real vive en el código. Esto es lo que hay en cada etapa y por 
   - `PII_ENCRYPTION_KEY` es la excepción: se escribe directo en `.env` (sustituye el valor vacío
     de la plantilla), no en `./secrets/` — ver `scripts/gen-secrets.sh`.
 - Verificado (2026-10-29): en el historial completo de los 12 repos no hay ningún `.env` real ni
-  ningún archivo de `secrets/` commiteado — solo los `.env.example` con placeholders.
+  ningún archivo de `secrets/` commiteado — solo los `.env.example` con placeholders (hoy existen en festa-infra, festa-auth-service, festa-user-service y festa-event-service).
 
 ## 2. CI (GitHub Actions)
 
@@ -52,8 +52,9 @@ porque no hay ningún entorno desplegado. Cuando llegue el acceso a AWS:
   horneados en la imagen de Docker ni en variables de entorno del workflow.
 - Los servicios los leen en el arranque desde el gestor de secretos del entorno, igual que hoy
   los leen desde `.env` en local.
-- GitHub Actions se autentica contra AWS con OIDC (un rol de IAM de corta duración por ejecución),
-  no con una llave de acceso de AWS guardada como secreto de GitHub — así una fuga del repo nunca
-  expone una credencial de larga duración.
+- En el Learner Lab no se pueden crear roles IAM ni OIDC: solo existe `LabRole`. Mientras dure el laboratorio,
+  el workflow usa las credenciales de sesión de `LabRole` guardadas como secretos de GitHub. Vencen cada ~4 h,
+  así que hay que renovarlas en cada sesión. Es una excepción del laboratorio: en una cuenta propia se usaría
+  OIDC con un rol de corta duración por ejecución.
 - Rotación: las llaves JWT y `PII_ENCRYPTION_KEY` rotan regenerándolas y redesplegando; las de
   Wompi y Google OAuth rotan desde sus propias consolas.
