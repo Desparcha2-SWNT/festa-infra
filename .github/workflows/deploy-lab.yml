@@ -54,6 +54,14 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      # Opcionales (environment aws-lab). Sin ellos: Wompi en modo prueba, IA con respuestas de ejemplo y
+      # notificaciones solo en la bandeja de la app.
+      TF_VAR_wompi_public_key: ${{ vars.WOMPI_PUBLIC_KEY || 'pub_test_xxx' }}
+      TF_VAR_wompi_private_key: ${{ secrets.WOMPI_PRIVATE_KEY }}
+      TF_VAR_wompi_events_secret: ${{ secrets.WOMPI_EVENTS_SECRET }}
+      TF_VAR_wompi_integrity_secret: ${{ secrets.WOMPI_INTEGRITY_SECRET }}
+      TF_VAR_llm_api_key: ${{ secrets.LLM_API_KEY }}
+      TF_VAR_fcm_service_account_json: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
     steps:
       - uses: actions/checkout@v4
 

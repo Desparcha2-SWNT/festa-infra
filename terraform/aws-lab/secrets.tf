@@ -63,12 +63,15 @@ locals {
     AI_MONGO_URL           = "mongodb://festa:${random_password.mongo.result}@${aws_lb.internal.dns_name}:27017/ai_db?authSource=admin"
     NOTIFICATION_MONGO_URL = "mongodb://festa:${random_password.mongo.result}@${aws_lb.internal.dns_name}:27017/notification_db?authSource=admin"
     ANALYTICS_MONGO_URL    = "mongodb://festa:${random_password.mongo.result}@${aws_lb.internal.dns_name}:27017/analytics_db?authSource=admin"
-    # Llegan por variables sensibles (TF_VAR_...), nunca desde el repo.
-    WOMPI_PRIVATE_KEY        = var.wompi_private_key
-    WOMPI_EVENTS_SECRET      = var.wompi_events_secret
-    WOMPI_INTEGRITY_SECRET   = var.wompi_integrity_secret
-    LLM_API_KEY              = var.llm_api_key
-    FCM_SERVICE_ACCOUNT_JSON = var.fcm_service_account_json
+    # Llegan por variables sensibles (TF_VAR_...), nunca desde el repo. Ningún valor queda vacío: GitHub entrega
+    # "" cuando un secreto no existe, y entonces se usan los placeholders de prueba.
+    WOMPI_PRIVATE_KEY      = coalesce(var.wompi_private_key, "prv_test_xxx")
+    WOMPI_EVENTS_SECRET    = coalesce(var.wompi_events_secret, "test_events_xxx")
+    WOMPI_INTEGRITY_SECRET = coalesce(var.wompi_integrity_secret, "test_integrity_xxx")
+    # "none" = sin llave: ai-service usa respuestas locales de ejemplo.
+    LLM_API_KEY = coalesce(var.llm_api_key, "none")
+    # GitHub entrega "" si el secreto no existe: {} = placeholder (sin push).
+    FCM_SERVICE_ACCOUNT_JSON = coalesce(var.fcm_service_account_json, "{}")
   }
 }
 
