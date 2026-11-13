@@ -91,6 +91,14 @@ resource "aws_security_group" "tasks" {
   }
 
   ingress {
+    description = "MongoDB desde el NLB interno"
+    from_port   = 27017
+    to_port     = 27017
+    protocol    = "tcp"
+    cidr_blocks = [local.vpc_cidr]
+  }
+
+  ingress {
     description = "AMQP desde el NLB interno"
     from_port   = 5672
     to_port     = 5672
