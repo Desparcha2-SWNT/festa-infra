@@ -5,18 +5,26 @@
 //   docker compose --profile all up -d --build
 //   node scripts/e2e/smoke.mjs                 # GATEWAY_URL=http://localhost:8000 por defecto
 //
-// Lee ADMIN_EMAIL / ADMIN_PASSWORD de .env. Sale con código 1 si algún paso falla.
+// Lee ADMIN_EMAIL / ADMIN_PASSWORD (y ALLOWED_EMAIL_DOMAIN) de las variables de entorno o, si no están, de
+// .env. Contra AWS: GATEWAY_URL=<api_base_url> ADMIN_PASSWORD=<de Secrets Manager> node scripts/e2e/smoke.mjs
+// (con payments_allow_simulation=true en Terraform). Sale con código 1 si algún paso falla.
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const env = Object.fromEntries(
+const fileEnv = Object.fromEntries(
   fs.existsSync(path.join(root, '.env'))
     ? fs.readFileSync(path.join(root, '.env'), 'utf8').split(/\r?\n/).filter((l) => /^[A-Z_]+=/.test(l)).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)])
     : [],
 );
+const pick = (name) => process.env[name] || fileEnv[name];
+const env = {
+  ADMIN_EMAIL: pick('ADMIN_EMAIL') || 'admin@escuelaing.edu.co',
+  ADMIN_PASSWORD: pick('ADMIN_PASSWORD'),
+  ALLOWED_EMAIL_DOMAIN: pick('ALLOWED_EMAIL_DOMAIN'),
+};
 const GATEWAY = process.env.GATEWAY_URL ?? 'http://localhost:8000';
 const DOMAIN = env.ALLOWED_EMAIL_DOMAIN || 'escuelaing.edu.co';
 const run = crypto.randomBytes(3).toString('hex');
