@@ -223,6 +223,7 @@ services:
       PORT: 8083
       DATABASE_URL: postgres://event_svc:${EVENT_DB_PASSWORD}@postgres:5432/event_db
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      PUBLIC_SHARE_BASE_URL: ${PUBLIC_SHARE_BASE_URL:-https://festa.app/e}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
     ports: ["8083:8083"]
@@ -243,6 +244,7 @@ services:
       DATABASE_URL: postgres://booking_svc:${BOOKING_DB_PASSWORD}@postgres:5432/booking_db
       RESERVATION_HOLD_MINUTES: ${RESERVATION_HOLD_MINUTES}
       QR_SIGNING_SECRET_PATH: /run/secrets/qr_signing.key
+      CHECKIN_OPENS_MINUTES_BEFORE: ${CHECKIN_OPENS_MINUTES_BEFORE:-120}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
       - ./secrets/qr_signing.key:/run/secrets/qr_signing.key:ro
@@ -271,6 +273,9 @@ services:
       COMMISSION_PERCENT: ${COMMISSION_PERCENT}
       COMMISSION_FIXED_CENTS: ${COMMISSION_FIXED_CENTS}
       RESERVATION_HOLD_MINUTES: ${RESERVATION_HOLD_MINUTES}
+      WOMPI_REDIRECT_URL: ${WOMPI_REDIRECT_URL:-festa://payments/result}
+      # Solo desarrollo: POST /api/payments/orders/{id}/simulate aprueba sin pasar por Wompi.
+      PAYMENTS_ALLOW_SIMULATION: ${PAYMENTS_ALLOW_SIMULATION:-false}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
     ports: ["8085:8085"]
@@ -293,6 +298,7 @@ services:
       LLM_CHAT_MODEL: ${LLM_CHAT_MODEL}
       LLM_DESCRIPTION_MODEL: ${LLM_DESCRIPTION_MODEL}
       AI_CHAT_RATE_LIMIT_PER_MIN: ${AI_CHAT_RATE_LIMIT_PER_MIN}
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
     ports: ["8086:8086"]
