@@ -5,9 +5,9 @@ Ningún secreto real vive en el código. Esto es lo que hay en cada etapa y por 
 ## 1. Desarrollo local
 
 - `.env.example` es el **contrato**: lista todas las variables que existen, con valores de
-  ejemplo (`change-me-*`, `prv_test_xxx`, etc.), y sí se versiona. Hoy solo lo tienen los repos
-  que ya tienen código con secretos propios: `festa-infra`, `festa-auth-service` y
-  `festa-event-service`. Los demás `festa-*-service` lo necesitan cuando dejen de ser un README.
+  ejemplo (`change-me-*`, `prv_test_xxx`, etc.), y sí se versiona. Hoy, en `develop`, lo tienen los
+  repos que ya tienen código con secretos propios: `festa-infra`, `festa-auth-service`,
+  `festa-user-service` y `festa-event-service`. Los demás `festa-*-service` lo agregan con su código.
 - `.env` es la copia con los valores reales de cada quien. Está en `.gitignore` en los repos que
   tienen `.env.example`, y nunca se sube.
 - `./scripts/gen-secrets.sh` genera lo que no puede ser un valor fijo de ejemplo:
@@ -20,8 +20,10 @@ Ningún secreto real vive en el código. Esto es lo que hay en cada etapa y por 
 ## 2. CI (GitHub Actions)
 
 Los workflows de CI/CD de todos los repos solo usan el `GITHUB_TOKEN` que GitHub genera e invalida
-automáticamente por ejecución (permisos explícitos por job, ver cada `ci.yml`/`cd.yml`). Ningún
-workflow usa hoy un secreto de larga duración:
+automáticamente por ejecución (permisos explícitos por job, ver cada `ci.yml`/`cd.yml`). La única
+excepción es el despliegue al laboratorio (`festa-infra/.github/workflows/deploy-lab.yml`), que
+además lee las credenciales de sesión de AWS del environment `aws-lab` (ver § 4). Ningún workflow
+usa hoy un secreto de larga duración:
 
 - El token fino `FESTA_INFRA_TOKEN` que se usó mientras `festa-infra` era privado ya no hace falta
   (el repo es público desde que el equipo decidió abrir los 12 repos) y no quedó configurado como
