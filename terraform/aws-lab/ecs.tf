@@ -358,9 +358,8 @@ resource "aws_ecs_service" "rabbitmq" {
 
 # ------------------------------------------------------------------ MongoDB
 # DocumentDB está bloqueado en el Learner Lab (error 2 del RUNBOOK): Mongo corre como tarea de Fargate para
-# ai, notification y analytics, cada uno con su base (ai_db, notification_db, analytics_db). Sin volumen,
-# como RabbitMQ: si la tarea se reinicia se pierden los datos (historial de chat, bandejas y agregados se
-# reconstruyen con el uso). Para producción: MongoDB Atlas o un volumen EFS.
+# ai, notification y analytics, cada uno con su base (ai_db, notification_db, analytics_db). /data/db está
+# en EFS (efs.tf): reiniciar o redesplegar la tarea conserva el historial de chat, las bandejas y los agregados.
 resource "aws_ecs_task_definition" "mongo" {
   family                   = "${local.name}-mongo"
   requires_compatibilities = ["FARGATE"]
@@ -376,10 +375,23 @@ resource "aws_ecs_task_definition" "mongo" {
     essential        = true
     command          = ["mongod", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
     portMappings     = [{ containerPort = 27017, protocol = "tcp" }]
+    mountPoints      = [{ sourceVolume = "mongo-data", containerPath = "/data/db", readOnly = false }]
     environment      = [{ name = "MONGO_INITDB_ROOT_USERNAME", value = "festa" }]
     secrets          = [{ name = "MONGO_INITDB_ROOT_PASSWORD", valueFrom = local.secret_ref["MONGO_ROOT_PASSWORD"] }]
     logConfiguration = local.log["mongo"]
   }])
+
+  volume {
+    name = "mongo-data"
+    efs_volume_configuration {
+      file_system_id     = aws_efs_file_system.mongo.id
+      transit_encryption = "ENABLED"
+      authorization_config {
+        access_point_id = aws_efs_access_point.mongo.id
+        iam             = "DISABLED"
+      }
+    }
+  }
 }
 
 resource "aws_ecs_service" "mongo" {
@@ -394,9 +406,12 @@ resource "aws_ecs_service" "mongo" {
     secret_version = aws_secretsmanager_secret_version.app.version_id
   }
 
-  # Una sola instancia: se apaga la vieja antes de arrancar la nueva.
+  # Una sola instancia: se apaga la vieja antes de arrancar la nueva. Además es obligatorio con EFS: dos mongod
+  # no pueden abrir el mismo /data/db a la vez.
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100
+  # EFS en Fargate requiere la plataforma 1.4.0 o posterior.
+  platform_version = "LATEST"
 
   network_configuration {
     subnets          = local.subnet_ids
@@ -410,7 +425,8 @@ resource "aws_ecs_service" "mongo" {
     container_port   = 27017
   }
 
-  depends_on = [aws_lb_listener.internal]
+  # La tarea no arranca si no hay un mount target de EFS en su subred.
+  depends_on = [aws_lb_listener.internal, aws_efs_mount_target.mongo]
 }
 
 # ------------------------------------------------------------------ microservicios

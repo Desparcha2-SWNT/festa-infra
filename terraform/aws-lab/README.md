@@ -24,7 +24,7 @@ internet ──HTTPS──► API Gateway ──VPC Link──► ALB interno �
 | PostgreSQL | RDS `db.t3.micro`, cifrado en reposo | `db-init.sh` crea las bases y usuarios, como `postgres/init` del compose |
 | Redis | ElastiCache `cache.t3.micro` | Un nodo, sin modo clúster, para poder usar las bases 0, 1 y 2 |
 | RabbitMQ | Tarea de Fargate | Carga la topología de `contracts/rabbitmq/definitions.json` al arrancar |
-| MongoDB | Tarea de Fargate (`mongo:7.0`) | DocumentDB está bloqueado. Sin volumen: los datos de ai, notification y analytics se pierden si la tarea se reinicia |
+| MongoDB | Tarea de Fargate (`mongo:7.0`) con `/data/db` en EFS | DocumentDB está bloqueado. EFS cifrado (reposo y tránsito) con access point uid 999: los datos de ai, notification y analytics sobreviven a reinicios y despliegues (`efs.tf`) |
 | Secretos | Secrets Manager | Llaves JWT, contraseñas y llave PII, generadas por Terraform |
 | Logs | CloudWatch Logs `/ecs/festa-lab` | 3 días de retención |
 

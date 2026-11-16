@@ -59,7 +59,7 @@ locals {
     PAYMENT_DATABASE_URL = "postgres://payment_svc:${random_password.db["payment"].result}@${aws_db_instance.main.address}:5432/payment_db?sslmode=no-verify"
     QR_SIGNING_SECRET    = random_password.qr.result
     MONGO_ROOT_PASSWORD  = random_password.mongo.result
-    # Usuario raíz con authSource=admin: Mongo es una sola tarea efímera (ecs.tf) y cada servicio usa su base.
+    # Usuario raíz con authSource=admin: Mongo es una sola tarea (ecs.tf, datos en EFS) y cada servicio usa su base.
     AI_MONGO_URL           = "mongodb://festa:${random_password.mongo.result}@${aws_lb.internal.dns_name}:27017/ai_db?authSource=admin"
     NOTIFICATION_MONGO_URL = "mongodb://festa:${random_password.mongo.result}@${aws_lb.internal.dns_name}:27017/notification_db?authSource=admin"
     ANALYTICS_MONGO_URL    = "mongodb://festa:${random_password.mongo.result}@${aws_lb.internal.dns_name}:27017/analytics_db?authSource=admin"
