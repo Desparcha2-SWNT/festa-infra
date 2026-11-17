@@ -24,3 +24,8 @@ output "secret_arn" {
 output "log_group" {
   value = aws_cloudwatch_log_group.main.name
 }
+
+output "wompi_webhook_url" {
+  description = "URL a registrar en el panel de Wompi (Desarrolladores → URL de eventos)."
+  value       = "${aws_apigatewayv2_api.main.api_endpoint}/webhooks/wompi"
+}
