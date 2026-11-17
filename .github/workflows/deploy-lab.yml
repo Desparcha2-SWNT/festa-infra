@@ -94,7 +94,8 @@ jobs:
           args="-var image_tag=$TAG -var services_desired_count=$COUNT"
           # Desde el CD de un servicio: solo ese servicio cambia de tag.
           if [ -n "$SERVICE" ]; then
-            case "$SERVICE" in auth|user|event|gateway) ;; *) echo "::error::servicio desconocido: $SERVICE"; exit 1;; esac
+            # Misma lista que app_names en terraform/aws-lab/lb.tf: si se agrega un servicio, cambiar las dos.
+            case "$SERVICE" in auth|user|event|booking|payment|ai|notification|analytics|gateway) ;; *) echo "::error::servicio desconocido: $SERVICE"; exit 1;; esac
             case "$SERVICE_TAG" in latest|sha-[0-9a-f]*) ;; *) echo "::error::tag inválido: $SERVICE_TAG"; exit 1;; esac
             case "$SERVICE_TAG" in *[!a-z0-9-]*) echo "::error::tag inválido: $SERVICE_TAG"; exit 1;; esac
             args="$args -var image_tags={\"$SERVICE\"=\"$SERVICE_TAG\"}"
