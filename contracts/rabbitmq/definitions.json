@@ -693,6 +693,22 @@
       "arguments": {}
     },
     {
+      "source": "festa.auth",
+      "vhost": "/",
+      "destination": "booking-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "account.registered",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "booking-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "profile.updated",
+      "arguments": {}
+    },
+    {
       "source": "festa.event",
       "vhost": "/",
       "destination": "booking-service.inbox",

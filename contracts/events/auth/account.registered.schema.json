@@ -10,7 +10,8 @@
   "x-consumers": {
     "user-service": "crea el perfil vacío",
     "notification-service": "registra el rol (para saber a quién avisar como admin)",
-    "analytics-service": "cuenta registros"
+    "analytics-service": "cuenta registros",
+    "booking-service": "nombre visible en la lista de asistentes del organizador"
   },
   "type": "object",
   "additionalProperties": false,

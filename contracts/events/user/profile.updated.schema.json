@@ -9,7 +9,8 @@
   "x-version": 1,
   "x-consumers": {
     "ai-service": "contexto para recomendaciones",
-    "notification-service": "segmentar push por intereses"
+    "notification-service": "segmentar push por intereses",
+    "booking-service": "actualiza el nombre visible en la lista de asistentes"
   },
   "type": "object",
   "additionalProperties": false,
