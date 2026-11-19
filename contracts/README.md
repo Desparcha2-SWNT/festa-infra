@@ -61,7 +61,8 @@ Cada esquema trae:
 
 | Routing key | Qué significa | Consumidores (para qué) |
 |---|---|---|
-| `account.registered` | Se creó una cuenta (email o Google). | **user**: crea el perfil vacío<br>**notification**: registra el rol (para saber a quién avisar como admin)<br>**analytics**: cuenta registros<br>**booking**: nombre visible en la lista de asistentes |
+| `account.registered` | Se creó una cuenta (email o Google). | **user**: crea el perfil vacío<br>**notification**: registra el rol (para saber a quién avisar como admin)<br>**analytics**: cuenta registros |
+| `account.display_name_set` | Quedó fijado el nombre visible de una cuenta (hoy, al registrarse). Solo lleva id y nombre: sin correo ni rol. | **booking**: nombre visible en la lista de asistentes del organizador |
 | `account.role_changed` | Cambió el rol de una cuenta (p. ej. un admin promueve a otro admin). Aplica en el siguiente refresh del token. | **notification**: actualiza la lista de admins a notificar |
 | `account.deleted` | El usuario borró su cuenta (Ley 1581, derecho de supresión). Cada servicio borra o anonimiza sus datos personales. | **user**: borra perfil, intereses y reportes hechos<br>**event**: cancela sus eventos futuros y anonimiza el organizador<br>**booking**: anonimiza asistencias y revoca pases futuros<br>**payment**: anonimiza al comprador (las órdenes se conservan por contabilidad)<br>**ai**: borra historial de chat y preferencias<br>**notification**: borra tokens FCM y ubicación<br>**analytics**: elimina el userId de sus agregados |
 
@@ -69,7 +70,7 @@ Cada esquema trae:
 
 | Routing key | Qué significa | Consumidores (para qué) |
 |---|---|---|
-| `profile.updated` | Cambiaron nombre, intereses o zona preferida del usuario. | **ai**: contexto para recomendaciones<br>**notification**: segmentar push por intereses<br>**booking**: actualiza el nombre visible en la lista de asistentes |
+| `profile.updated` | Cambiaron nombre, intereses o zona preferida del usuario. | **ai**: contexto para recomendaciones<br>**notification**: segmentar push por intereses |
 | `location_consent.granted` | RNF5: el usuario aceptó explícitamente el uso de su ubicación. | **notification**: habilita push por cercanía<br>**ai**: puede usar la ubicación enviada en el chat |
 | `location_consent.revoked` | RNF5: el usuario retiró el consentimiento. Hay que borrar la ubicación guardada. | **notification**: borra la última ubicación y deja de enviar push por cercanía<br>**ai**: deja de usar ubicación |
 | `merchant.submitted` | Un comercio envió (o reenvió) su perfil para verificación manual. | **notification**: avisa a los admins<br>**analytics**: cuenta solicitudes pendientes |
@@ -137,7 +138,7 @@ Cada esquema trae:
 | ai | `account.deleted`, `profile.updated`, `location_consent.granted`, `location_consent.revoked`, `merchant.updated`, `event.published`, `event.updated`, `event.cancelled`, `event.sold_out`, `event.expired` |
 | analytics | `account.registered`, `account.deleted`, `merchant.submitted`, `merchant.verified`, `report.created`, `report.resolved`, `event.published`, `event.updated`, `event.rescheduled`, `event.cancelled`, `event.sold_out`, `event.expired`, `engagement.viewed`, `engagement.shared`, `attendance.confirmed`, `attendance.cancelled`, `pass.checked_in`, `pass.check_in_rejected`, `order.created`, `order.approved`, `order.failed`, `order.expired`, `order.refund_requested`, `order.refunded`, `payout.recorded`, `description.generated`, `recommendation.served`, `push.sent` |
 | auth | `moderation.user_suspended`, `moderation.user_reinstated` |
-| booking | `account.registered`, `account.deleted`, `profile.updated`, `event.published`, `event.updated`, `event.cancelled`, `event.expired`, `order.approved`, `order.refunded` |
+| booking | `account.display_name_set`, `account.deleted`, `event.published`, `event.updated`, `event.cancelled`, `event.expired`, `order.approved`, `order.refunded` |
 | event | `account.deleted`, `merchant.verified`, `merchant.updated`, `moderation.user_suspended`, `moderation.user_reinstated`, `moderation.event_hidden`, `moderation.event_restored`, `attendance.confirmed`, `attendance.cancelled` |
 | notification | `account.registered`, `account.role_changed`, `account.deleted`, `profile.updated`, `location_consent.granted`, `location_consent.revoked`, `merchant.submitted`, `merchant.verified`, `merchant.rejected`, `report.created`, `report.resolved`, `moderation.user_suspended`, `moderation.user_reinstated`, `event.published`, `event.rescheduled`, `event.cancelled`, `attendance.confirmed`, `attendance.cancelled`, `pass.checked_in`, `order.approved`, `order.failed`, `order.expired`, `order.refund_requested`, `order.refunded`, `payout.recorded` |
 | payment | `account.deleted`, `merchant.verified`, `merchant.updated`, `event.published`, `event.updated`, `event.cancelled`, `event.expired` |
