@@ -6,7 +6,7 @@
   "x-exchange": "festa.booking",
   "x-routing-key": "attendance.cancelled",
   "x-producer": "booking-service",
-  "x-version": 1,
+  "x-version": 2,
   "x-consumers": {
     "event-service": "actualiza attendeeCount",
     "notification-service": "cancela recordatorios",
@@ -21,6 +21,7 @@
     "reason",
     "revokedPassIds",
     "attendeeCount",
+    "attendanceVersion",
     "cancelledAt"
   ],
   "properties": {
@@ -52,6 +53,11 @@
         "format": "uuid"
       }
     },
+    "attendanceVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Versión monotónica de la asistencia del evento: booking la sube en 1 con cada cambio de conteo y event-service solo aplica una versión mayor."
+    },
     "attendeeCount": {
       "type": "integer",
       "minimum": 0
@@ -72,6 +78,7 @@
         "a7b8c9d0-e1f2-4a3b-8c4d-5e6f7a8b9c0d"
       ],
       "attendeeCount": 40,
+      "attendanceVersion": 8,
       "cancelledAt": "2026-10-31T18:00:00Z"
     }
   ]
