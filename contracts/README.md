@@ -54,6 +54,11 @@ Cada esquema trae:
 ### Evolución
 - Agregar campos **opcionales** no rompe nada: los consumidores ignoran lo que no conocen. Por eso validan con `additionalProperties` relajado; el esquema estricto es para el productor.
 - Quitar/renombrar campos o volver obligatorio uno nuevo exige un nuevo `x-version` y publicar ambas versiones mientras los consumidores migran.
+- **Excepción documentada, `attendance.confirmed` y `attendance.cancelled` v2 (SCRUM-71):** `attendanceVersion` pasa a obligatorio y los esquemas de este catálogo solo guardan la v2. Hoy los registros de esquemas de los consumidores indexan un único validador por routing key, así que no hay selección por versión del sobre. Para el piloto se acepta porque:
+  - Productor y consumidores (booking-service y event-service) se despliegan juntos, y no hay otro consumidor que dependa de la v1 de estos dos mensajes.
+  - Ambos mensajes llevan el conteo **total** de asistentes, no un delta: un mensaje v1 que se pierda en la transición lo corrige el siguiente v2 del mismo evento.
+  - Un mensaje v1 que aún estuviera en cola falla la validación y va a la DLQ sin aplicar efectos (ver Consumir); se puede reinyectar o descartar desde la UI de RabbitMQ.
+  - Antes de desplegar, conviene vaciar `event-service.inbox` y su cola de reintento. Si más adelante hay otros consumidores o mensajes en vuelo que importen, hay que publicar ambas versiones y seleccionar el esquema por la versión del sobre.
 
 ## Catálogo (38 eventos)
 
