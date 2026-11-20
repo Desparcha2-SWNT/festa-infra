@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://festa.local/contracts/events/auth/account.display_name_set.schema.json",
+  "title": "account.display_name_set",
+  "description": "Quedó fijado el nombre visible de una cuenta. Lleva solo el id y el nombre, para los servicios que necesitan mostrar quién es alguien sin recibir su correo ni su rol (minimización de datos, Ley 1581). Hoy se publica al registrarse, en la misma transacción que account.registered.",
+  "x-exchange": "festa.auth",
+  "x-routing-key": "account.display_name_set",
+  "x-producer": "auth-service",
+  "x-version": 1,
+  "x-consumers": {
+    "booking-service": "nombre visible en la lista de asistentes del organizador"
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "userId",
+    "displayName",
+    "setAt"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "displayName": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "setAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "examples": [
+    {
+      "userId": "0b9c7d6e-5f4a-4b3c-8d2e-1a0b9c8d7e6f",
+      "displayName": "Ana María",
+      "setAt": "2026-11-14T10:00:00Z"
+    }
+  ]
+}
