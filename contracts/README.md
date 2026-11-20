@@ -54,11 +54,12 @@ Cada esquema trae:
 ### Evolución
 - Agregar campos **opcionales** no rompe nada: los consumidores ignoran lo que no conocen. Por eso validan con `additionalProperties` relajado; el esquema estricto es para el productor.
 - Quitar/renombrar campos o volver obligatorio uno nuevo exige un nuevo `x-version` y publicar ambas versiones mientras los consumidores migran.
-- **Excepción documentada, `attendance.confirmed` y `attendance.cancelled` v2 (SCRUM-71):** `attendanceVersion` pasa a obligatorio y los esquemas de este catálogo solo guardan la v2. Hoy los registros de esquemas de los consumidores indexan un único validador por routing key, así que no hay selección por versión del sobre. Para el piloto se acepta porque:
-  - Productor y consumidores (booking-service y event-service) se despliegan juntos, y no hay otro consumidor que dependa de la v1 de estos dos mensajes.
-  - Ambos mensajes llevan el conteo **total** de asistentes, no un delta: un mensaje v1 que se pierda en la transición lo corrige el siguiente v2 del mismo evento.
-  - Un mensaje v1 que aún estuviera en cola falla la validación y va a la DLQ sin aplicar efectos (ver Consumir); se puede reinyectar o descartar desde la UI de RabbitMQ.
-  - Antes de desplegar, conviene vaciar `event-service.inbox` y su cola de reintento. Si más adelante hay otros consumidores o mensajes en vuelo que importen, hay que publicar ambas versiones y seleccionar el esquema por la versión del sobre.
+- **Excepción documentada, `attendance.confirmed` y `attendance.cancelled` v2 (SCRUM-71):** `attendanceVersion` pasa a obligatorio y los esquemas de este catálogo solo guardan la v2. Hoy los registros de esquemas de los consumidores indexan un único validador por routing key, así que no hay selección por versión del sobre. Para el piloto se acepta con estas condiciones:
+  - **Hay tres consumidores** de estos dos mensajes: `event-service`, `notification-service` y `analytics-service` (ver `x-consumers` en cada esquema y los bindings de `rabbitmq/definitions.json`). Sus colas ya están ligadas y reciben mensajes v1 aunque el servicio aún no esté desplegado.
+  - **Se despliegan juntos:** booking-service (productor) y los tres consumidores, todos con el catálogo v2.
+  - **Antes de desplegar, drenar:** detener booking-service, esperar a que su outbox esté vacío y a que `event-service.inbox`, `notification-service.inbox`, `analytics-service.inbox` y sus colas `*.inbox.retry` lleguen a 0 mensajes; solo entonces desplegar. Así los v1 los procesa el código viejo y ninguno llega a un consumidor v2.
+  - **Un v1 en la DLQ no se recupera:** reinyectarlo no sirve, porque sigue sin `attendanceVersion` y vuelve a fallar la validación (ver Consumir). El efecto se pierde: el conteo de `event-service` queda desfasado hasta el siguiente cambio de asistencia de ese evento (el mensaje lleva el conteo total, ahí se corrige; si era el último cambio, no hay corrección); `analytics-service` suma por mensaje, así que no cuenta ese cambio; y `notification-service` no programa o no cancela el recordatorio de esa persona. Para el piloto se acepta ese riesgo residual.
+  - Si aparecen otros consumidores o mensajes en vuelo que importen, hay que publicar ambas versiones y seleccionar el esquema por la versión del sobre.
 
 ## Catálogo (38 eventos)
 
