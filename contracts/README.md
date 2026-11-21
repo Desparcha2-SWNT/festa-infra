@@ -54,6 +54,12 @@ Cada esquema trae:
 ### Evolución
 - Agregar campos **opcionales** no rompe nada: los consumidores ignoran lo que no conocen. Por eso validan con `additionalProperties` relajado; el esquema estricto es para el productor.
 - Quitar/renombrar campos o volver obligatorio uno nuevo exige un nuevo `x-version` y publicar ambas versiones mientras los consumidores migran.
+- **Excepción documentada, `attendance.confirmed` y `attendance.cancelled` v2 (SCRUM-71):** `attendanceVersion` pasa a obligatorio y los esquemas de este catálogo solo guardan la v2. Hoy los registros de esquemas de los consumidores indexan un único validador por routing key, así que no hay selección por versión del sobre. Para el piloto se acepta con estas condiciones:
+  - **Hay tres consumidores** de estos dos mensajes: `event-service`, `notification-service` y `analytics-service` (ver `x-consumers` en cada esquema y los bindings de `rabbitmq/definitions.json`). Sus colas ya están ligadas y reciben mensajes v1 aunque el servicio aún no esté desplegado.
+  - **Se despliegan juntos:** booking-service (productor) y los tres consumidores, todos con el catálogo v2.
+  - **Antes de desplegar, drenar:** detener booking-service, esperar a que su outbox esté vacío y a que `event-service.inbox`, `notification-service.inbox`, `analytics-service.inbox` y sus colas `*.inbox.retry` lleguen a 0 mensajes; solo entonces desplegar. Así los v1 los procesa el código viejo y ninguno llega a un consumidor v2.
+  - **Un v1 en la DLQ no se recupera:** reinyectarlo no sirve, porque sigue sin `attendanceVersion` y vuelve a fallar la validación (ver Consumir). El efecto se pierde: el conteo de `event-service` queda desfasado hasta el siguiente cambio de asistencia de ese evento (el mensaje lleva el conteo total, ahí se corrige; si era el último cambio, no hay corrección); `analytics-service` suma por mensaje, así que no cuenta ese cambio; y `notification-service` no programa o no cancela el recordatorio de esa persona. Para el piloto se acepta ese riesgo residual.
+  - Si aparecen otros consumidores o mensajes en vuelo que importen, hay que publicar ambas versiones y seleccionar el esquema por la versión del sobre.
 
 ## Catálogo (38 eventos)
 
@@ -62,6 +68,7 @@ Cada esquema trae:
 | Routing key | Qué significa | Consumidores (para qué) |
 |---|---|---|
 | `account.registered` | Se creó una cuenta (email o Google). | **user**: crea el perfil vacío<br>**notification**: registra el rol (para saber a quién avisar como admin)<br>**analytics**: cuenta registros |
+| `account.display_name_set` | Quedó fijado el nombre visible de una cuenta (hoy, al registrarse). Solo lleva id y nombre: sin correo ni rol. | **booking**: nombre visible en la lista de asistentes del organizador |
 | `account.role_changed` | Cambió el rol de una cuenta (p. ej. un admin promueve a otro admin). Aplica en el siguiente refresh del token. | **notification**: actualiza la lista de admins a notificar |
 | `account.deleted` | El usuario borró su cuenta (Ley 1581, derecho de supresión). Cada servicio borra o anonimiza sus datos personales. | **user**: borra perfil, intereses y reportes hechos<br>**event**: cancela sus eventos futuros y anonimiza el organizador<br>**booking**: anonimiza asistencias y revoca pases futuros<br>**payment**: anonimiza al comprador (las órdenes se conservan por contabilidad)<br>**ai**: borra historial de chat y preferencias<br>**notification**: borra tokens FCM y ubicación<br>**analytics**: elimina el userId de sus agregados |
 
@@ -137,7 +144,7 @@ Cada esquema trae:
 | ai | `account.deleted`, `profile.updated`, `location_consent.granted`, `location_consent.revoked`, `merchant.updated`, `event.published`, `event.updated`, `event.cancelled`, `event.sold_out`, `event.expired` |
 | analytics | `account.registered`, `account.deleted`, `merchant.submitted`, `merchant.verified`, `report.created`, `report.resolved`, `event.published`, `event.updated`, `event.rescheduled`, `event.cancelled`, `event.sold_out`, `event.expired`, `engagement.viewed`, `engagement.shared`, `attendance.confirmed`, `attendance.cancelled`, `pass.checked_in`, `pass.check_in_rejected`, `order.created`, `order.approved`, `order.failed`, `order.expired`, `order.refund_requested`, `order.refunded`, `payout.recorded`, `description.generated`, `recommendation.served`, `push.sent` |
 | auth | `moderation.user_suspended`, `moderation.user_reinstated` |
-| booking | `account.deleted`, `event.published`, `event.updated`, `event.cancelled`, `event.expired`, `order.approved`, `order.refunded` |
+| booking | `account.display_name_set`, `account.deleted`, `event.published`, `event.updated`, `event.cancelled`, `event.expired`, `order.approved`, `order.refunded` |
 | event | `account.deleted`, `merchant.verified`, `merchant.updated`, `moderation.user_suspended`, `moderation.user_reinstated`, `moderation.event_hidden`, `moderation.event_restored`, `attendance.confirmed`, `attendance.cancelled` |
 | notification | `account.registered`, `account.role_changed`, `account.deleted`, `profile.updated`, `location_consent.granted`, `location_consent.revoked`, `merchant.submitted`, `merchant.verified`, `merchant.rejected`, `report.created`, `report.resolved`, `moderation.user_suspended`, `moderation.user_reinstated`, `event.published`, `event.rescheduled`, `event.cancelled`, `attendance.confirmed`, `attendance.cancelled`, `pass.checked_in`, `order.approved`, `order.failed`, `order.expired`, `order.refund_requested`, `order.refunded`, `payout.recorded` |
 | payment | `account.deleted`, `merchant.verified`, `merchant.updated`, `event.published`, `event.updated`, `event.cancelled`, `event.expired` |

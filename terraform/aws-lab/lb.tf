@@ -1,15 +1,14 @@
 # Balanceadores.
-# - ALB público: la única entrada desde internet, hacia Kong (festa-gateway).
+# - ALB interno: delante de Kong (festa-gateway). Desde internet solo se llega por API Gateway (apigw.tf),
+#   que termina HTTPS y entra a la VPC por un VPC Link. El ALB no tiene IP pública.
 # - NLB interno: reemplaza el DNS por nombre de servicio, porque el Learner Lab no permite Cloud Map. Cada
-#   servicio tiene un puerto (8081 auth, 8082 user, 8083 event) y RabbitMQ el 5672. Kong recibe estas URLs
+#   servicio tiene un puerto (8081 auth … 8088 analytics), RabbitMQ el 5672 y MongoDB el 27017. Kong recibe estas URLs
 #   por variables de entorno (festa-gateway#5). Es NLB y no ALB porque AMQP es TCP, no HTTP.
 
-# Excepción revisada: es la entrada pública de la API, tiene que ser accesible desde internet.
-#trivy:ignore:AVD-AWS-0053
-resource "aws_lb" "public" {
-  name                       = "${local.name}-public"
+resource "aws_lb" "gateway" {
+  name                       = "${local.name}-alb"
   load_balancer_type         = "application"
-  internal                   = false
+  internal                   = true
   security_groups            = [aws_security_group.alb.id]
   subnets                    = local.subnet_ids
   drop_invalid_header_fields = true
@@ -34,11 +33,12 @@ resource "aws_lb_target_group" "gateway" {
   }
 }
 
-# Excepción TEMPORAL: no hay dominio propio para pedir un certificado de ACM. El siguiente paso es poner
-# CloudFront delante del ALB, que da HTTPS con su dominio por defecto (ver README, "Pendiente").
+# Excepción revisada: el HTTPS del cliente termina en API Gateway, con certificado de AWS. Este listener
+# solo recibe tráfico del VPC Link, dentro de la VPC, como el NLB interno. Un certificado propio necesitaría
+# un dominio, y el Learner Lab no permite CloudFront.
 #trivy:ignore:AVD-AWS-0054
-resource "aws_lb_listener" "public_http" {
-  load_balancer_arn = aws_lb.public.arn
+resource "aws_lb_listener" "gateway_http" {
+  load_balancer_arn = aws_lb.gateway.arn
   port              = 80
   protocol          = "HTTP"
 
@@ -60,11 +60,20 @@ resource "aws_lb" "internal" {
 locals {
   # Puertos del NLB interno. Mismos números que en el compose.
   internal_ports = {
-    auth     = { port = 8081, health = "/health" }
-    user     = { port = 8082, health = "/health" }
-    event    = { port = 8083, health = "/health" }
-    rabbitmq = { port = 5672, health = null }
+    auth         = { port = 8081, health = "/health" }
+    user         = { port = 8082, health = "/health" }
+    event        = { port = 8083, health = "/health" }
+    booking      = { port = 8084, health = "/health" }
+    payment      = { port = 8085, health = "/health" }
+    ai           = { port = 8086, health = "/health" }
+    notification = { port = 8087, health = "/health" }
+    analytics    = { port = 8088, health = "/health" }
+    rabbitmq     = { port = 5672, health = null }
+    mongo        = { port = 27017, health = null }
   }
+
+  # Gateway y microservicios: las imágenes que publica el CD de cada repo en GHCR.
+  app_names = ["auth", "user", "event", "booking", "payment", "ai", "notification", "analytics", "gateway"]
 }
 
 resource "aws_lb_target_group" "internal" {
@@ -100,5 +109,5 @@ resource "aws_lb_listener" "internal" {
 }
 
 locals {
-  internal_url = { for k, v in local.internal_ports : k => "http://${aws_lb.internal.dns_name}:${v.port}" if k != "rabbitmq" }
+  internal_url = { for k, v in local.internal_ports : k => "http://${aws_lb.internal.dns_name}:${v.port}" if !contains(["rabbitmq", "mongo"], k) }
 }

@@ -11,7 +11,7 @@ REGION="${AWS_REGION:-us-east-1}"
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 BUCKET="festa-tfstate-${ACCOUNT}"
 
-if aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
+if aws s3api head-bucket --bucket "$BUCKET" >/dev/null 2>&1; then
   echo "$BUCKET"
   exit 0
 fi

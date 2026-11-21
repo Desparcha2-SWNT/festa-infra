@@ -6,7 +6,7 @@
   "x-exchange": "festa.booking",
   "x-routing-key": "attendance.confirmed",
   "x-producer": "booking-service",
-  "x-version": 1,
+  "x-version": 2,
   "x-consumers": {
     "event-service": "actualiza attendeeCount (y detecta sold out)",
     "notification-service": "confirma al usuario y programa recordatorios",
@@ -23,6 +23,7 @@
     "source",
     "passIds",
     "attendeeCount",
+    "attendanceVersion",
     "confirmedAt"
   ],
   "properties": {
@@ -68,6 +69,11 @@
       },
       "description": "Un pase QR por asistente/boleta (RNF7)"
     },
+    "attendanceVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Versión monotónica de la asistencia del evento: booking la sube en 1 con cada cambio de conteo y event-service solo aplica una versión mayor."
+    },
     "attendeeCount": {
       "type": "integer",
       "minimum": 0,
@@ -92,6 +98,7 @@
         "a7b8c9d0-e1f2-4a3b-8c4d-5e6f7a8b9c0d"
       ],
       "attendeeCount": 42,
+      "attendanceVersion": 7,
       "confirmedAt": "2026-10-30T18:00:01Z"
     }
   ]
