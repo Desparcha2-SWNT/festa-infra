@@ -338,7 +338,8 @@ services:
       <<: *amqp-env
       PORT: 8088
       MONGO_URL: mongodb://analytics_svc:${ANALYTICS_MONGO_PASSWORD}@mongo:27017/analytics_db?authSource=analytics_db
-      INBOX_RETRY_KEY: ${ANALYTICS_INBOX_RETRY_KEY}
+      # Obligatoria y no vacía: con un .env viejo, Compose se detiene en vez de arrancar sin firma efectiva.
+      INBOX_RETRY_KEY: ${ANALYTICS_INBOX_RETRY_KEY:?define ANALYTICS_INBOX_RETRY_KEY en .env (openssl rand -hex 32)}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
     ports: ["8088:8088"]

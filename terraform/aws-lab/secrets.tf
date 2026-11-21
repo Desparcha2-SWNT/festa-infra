@@ -79,7 +79,8 @@ locals {
     # GitHub entrega "" si el secreto no existe: {} = placeholder (sin push).
     FCM_SERVICE_ACCOUNT_JSON = coalesce(var.fcm_service_account_json, "{}")
 
-    # Una clave por servicio: un servicio comprometido no puede firmar los reintentos de otro.
+    # Clave del servicio analytics. En el Learner Lab no aísla frente a otras tareas: todas usan LabRole, que lee el
+    # secreto completo (ver SECRETS.md).
     ANALYTICS_INBOX_RETRY_KEY = random_bytes.analytics_inbox_retry.hex
   }
 }
