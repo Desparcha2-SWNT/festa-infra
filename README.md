@@ -20,7 +20,7 @@ Infraestructura local de Festa (Docker Compose) y **contratos de mensajería** d
 
 ```bash
 cp .env.example .env          # edita contraseñas
-./scripts/gen-secrets.sh      # llaves JWT, secreto de QR, PII_ENCRYPTION_KEY
+./scripts/gen-secrets.sh      # llaves JWT, secreto de QR, PII_ENCRYPTION_KEY y claves de reintentos de inbox
 docker compose up -d          # solo infraestructura
 docker compose --profile auth --profile gateway up -d --build
 docker compose --profile all up -d --build

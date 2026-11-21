@@ -14,6 +14,21 @@ Ningún secreto real vive en el código. Esto es lo que hay en cada etapa y por 
   - Las llaves JWT RS256 y el secreto de firma del QR quedan en `./secrets/`, ignorado por git.
   - `PII_ENCRYPTION_KEY` es la excepción: se escribe directo en `.env` (sustituye el valor vacío
     de la plantilla), no en `./secrets/` — ver `scripts/gen-secrets.sh`.
+- `ANALYTICS_INBOX_RETRY_KEY`, `PAYMENT_INBOX_RETRY_KEY` y `AI_INBOX_RETRY_KEY` firman el origen de los reintentos
+  de la inbox de analytics, payment y ai (HMAC); cada servicio la lee como `INBOX_RETRY_KEY`. Con las
+  credenciales de RabbitMQ compartidas, cualquiera puede publicar directo en una inbox; sin esta clave no puede
+  fabricar un reintento válido. Es una clave **por servicio** y **todas las réplicas** de ese servicio deben usar
+  la misma (si cada una generara la suya, rechazaría los reintentos firmados por otra). En local las genera
+  `./scripts/gen-secrets.sh` (aleatorias y persistentes en `.env`; la plantilla `.env.example` las deja **vacías** a
+  propósito, porque un valor de ejemplo sería una clave pública); en AWS la genera Terraform (`random_bytes`, estable mientras no cambie el estado) y llega como secreto de ECS.
+  Rotarla pierde los reintentos que estén en vuelo (pasan a la DLQ); se redespliega con la nueva.
+  - Compose exige que no esté vacía (`:?`) y el servicio se niega a arrancar con una clave vacía o de menos de 16
+    caracteres: una clave conocida dejaría la firma sin efecto.
+  - **Límites, para no sobrevalorarla:** en el Learner Lab todas las tareas usan `LabRole` y los secretos viven en un
+    único secreto JSON, así que ECS solo inyecta la variable a analytics pero otra tarea comprometida podría leer
+    la clave con las credenciales de su rol. Tampoco sustituye a los usuarios y permisos de RabbitMQ por servicio:
+    hoy todos comparten el mismo usuario, y la firma solo impide fabricar un reintento sin conocer la clave. En
+    una cuenta propia, el aislamiento real exige un rol de tarea por servicio con acceso solo a sus secretos.
 - Verificado (2026-10-29): en el historial completo de los 12 repos no hay ningún `.env` real ni
   ningún archivo de `secrets/` commiteado — solo los `.env.example` con placeholders (hoy existen en festa-infra, festa-auth-service, festa-user-service y festa-event-service).
 

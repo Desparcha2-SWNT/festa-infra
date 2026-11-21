@@ -56,6 +56,8 @@ jobs:
       - name: Validar docker-compose.yml
         run: |
           cp .env.example .env
+          # Las claves de reintentos van vacías en la plantilla y Compose exige un valor: se generan desechables.
+          ./scripts/gen-secrets.sh
           for perfil in "" "--profile all" "--profile tunnel"; do
             docker compose $perfil config -q
           done
