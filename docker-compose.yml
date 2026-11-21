@@ -270,8 +270,6 @@ services:
       WOMPI_FEE_PERCENT: ${WOMPI_FEE_PERCENT}
       WOMPI_FEE_FIXED_CENTS: ${WOMPI_FEE_FIXED_CENTS}
       IVA_PERCENT: ${IVA_PERCENT}
-      COMMISSION_PERCENT: ${COMMISSION_PERCENT}
-      COMMISSION_FIXED_CENTS: ${COMMISSION_FIXED_CENTS}
       RESERVATION_HOLD_MINUTES: ${RESERVATION_HOLD_MINUTES}
       WOMPI_REDIRECT_URL: ${WOMPI_REDIRECT_URL:-festa://payments/result}
       # Solo desarrollo: POST /api/payments/orders/{id}/simulate aprueba sin pasar por Wompi.

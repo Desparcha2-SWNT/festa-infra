@@ -121,12 +121,6 @@ variable "wompi_redirect_url" {
   default     = "festa://payments/result"
 }
 
-variable "commission_percent" {
-  description = "Comisión de Festa por boleta (RN2); debe superar 2,99 % + IVA de Wompi."
-  type        = number
-  default     = 8
-}
-
 variable "payments_allow_simulation" {
   description = "Solo para demos sin Wompi: habilita POST /api/payments/orders/{id}/simulate."
   type        = bool
