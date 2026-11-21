@@ -45,6 +45,11 @@ resource "random_bytes" "analytics_inbox_retry" {
   length = 32
 }
 
+# Ídem para payment: la firma del origen de los reintentos de su inbox.
+resource "random_bytes" "payment_inbox_retry" {
+  length = 32
+}
+
 locals {
   secret_values = {
     JWT_PRIVATE_KEY     = tls_private_key.jwt.private_key_pem_pkcs8 # PKCS#8, como openssl genpkey; auth-service no lee PKCS#1
@@ -79,9 +84,10 @@ locals {
     # GitHub entrega "" si el secreto no existe: {} = placeholder (sin push).
     FCM_SERVICE_ACCOUNT_JSON = coalesce(var.fcm_service_account_json, "{}")
 
-    # Clave del servicio analytics. En el Learner Lab no aísla frente a otras tareas: todas usan LabRole, que lee el
-    # secreto completo (ver SECRETS.md).
+    # Claves que firman el origen de los reintentos de cada inbox. En el Learner Lab no aíslan frente a otras tareas:
+    # todas usan LabRole, que lee el secreto completo (ver SECRETS.md).
     ANALYTICS_INBOX_RETRY_KEY = random_bytes.analytics_inbox_retry.hex
+    PAYMENT_INBOX_RETRY_KEY   = random_bytes.payment_inbox_retry.hex
   }
 }
 

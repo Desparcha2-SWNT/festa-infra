@@ -276,6 +276,8 @@ services:
       WOMPI_REDIRECT_URL: ${WOMPI_REDIRECT_URL:-festa://payments/result}
       # Solo desarrollo: POST /api/payments/orders/{id}/simulate aprueba sin pasar por Wompi.
       PAYMENTS_ALLOW_SIMULATION: ${PAYMENTS_ALLOW_SIMULATION:-false}
+      # Obligatoria y no vacía: con un .env viejo, Compose se detiene en vez de arrancar sin firma efectiva.
+      INBOX_RETRY_KEY: ${PAYMENT_INBOX_RETRY_KEY:?define PAYMENT_INBOX_RETRY_KEY en .env (openssl rand -hex 32)}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
     ports: ["8085:8085"]

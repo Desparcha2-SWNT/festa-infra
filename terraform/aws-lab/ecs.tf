@@ -163,6 +163,7 @@ locals {
         WOMPI_PRIVATE_KEY      = "WOMPI_PRIVATE_KEY"
         WOMPI_EVENTS_SECRET    = "WOMPI_EVENTS_SECRET"
         WOMPI_INTEGRITY_SECRET = "WOMPI_INTEGRITY_SECRET"
+        INBOX_RETRY_KEY        = "PAYMENT_INBOX_RETRY_KEY"
       }
     }
     # RF8, RF9: IA Generativa. Sin LLM_API_KEY usa respuestas locales de ejemplo (sin costo).
