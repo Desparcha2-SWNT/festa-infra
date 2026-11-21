@@ -18,8 +18,9 @@ Ningún secreto real vive en el código. Esto es lo que hay en cada etapa y por 
   analytics y de payment (HMAC); cada servicio la lee como `INBOX_RETRY_KEY`. Con las
   credenciales de RabbitMQ compartidas, cualquiera puede publicar directo en una inbox; sin esta clave no puede
   fabricar un reintento válido. Es una clave **por servicio** y **todas las réplicas** de ese servicio deben usar
-  la misma (si cada una generara la suya, rechazaría los reintentos firmados por otra). En local sale de `.env`;
-  en AWS la genera Terraform (`random_bytes`, estable mientras no cambie el estado) y llega como secreto de ECS.
+  la misma (si cada una generara la suya, rechazaría los reintentos firmados por otra). En local las genera
+  `./scripts/gen-secrets.sh` (aleatorias y persistentes en `.env`; la plantilla `.env.example` las deja **vacías** a
+  propósito, porque un valor de ejemplo sería una clave pública); en AWS la genera Terraform (`random_bytes`, estable mientras no cambie el estado) y llega como secreto de ECS.
   Rotarla pierde los reintentos que estén en vuelo (pasan a la DLQ); se redespliega con la nueva.
   - Compose exige que no esté vacía (`:?`) y el servicio se niega a arrancar con una clave vacía o de menos de 16
     caracteres: una clave conocida dejaría la firma sin efecto.
