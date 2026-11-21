@@ -5,6 +5,71 @@
 #   servicio tiene un puerto (8081 auth … 8088 analytics), RabbitMQ el 5672 y MongoDB el 27017. Kong recibe estas URLs
 #   por variables de entorno (festa-gateway#5). Es NLB y no ALB porque AMQP es TCP, no HTTP.
 
+data "aws_caller_identity" "current" {}
+
+# Logs de acceso del ALB interno: quién llamó, cuándo, con qué código y cuánto tardó. Sirven para auditar y
+# para diagnosticar fallas de entrega. Se guardan 30 días (entorno de laboratorio) y sin acceso público.
+resource "aws_s3_bucket" "alb_logs" {
+  bucket        = "${local.name}-alb-logs-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true
+}
+
+resource "aws_s3_bucket_public_access_block" "alb_logs" {
+  bucket                  = aws_s3_bucket.alb_logs.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# Excepción revisada: los logs de acceso del ALB no contienen secretos ni datos personales (solo IP, ruta, código
+# y tiempos), y AES-256 administrado por S3 los protege en reposo. Una llave KMS propia añade costo y permisos
+# que el Learner Lab no siempre da.
+#trivy:ignore:AVD-AWS-0132
+resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  rule {
+    id     = "expirar-logs"
+    status = "Enabled"
+    filter {}
+
+    expiration {
+      days = 30
+    }
+  }
+}
+
+# El servicio de entrega de logs de Elastic Load Balancing escribe aquí. Solo puede escribir en su prefijo.
+data "aws_iam_policy_document" "alb_logs" {
+  statement {
+    sid       = "EntregaDeLogsDelAlb"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.alb_logs.arn}/alb/AWSLogs/${data.aws_caller_identity.current.account_id}/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["logdelivery.elasticloadbalancing.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+  policy = data.aws_iam_policy_document.alb_logs.json
+}
+
 resource "aws_lb" "gateway" {
   name                       = "${local.name}-alb"
   load_balancer_type         = "application"
@@ -12,6 +77,15 @@ resource "aws_lb" "gateway" {
   security_groups            = [aws_security_group.alb.id]
   subnets                    = local.subnet_ids
   drop_invalid_header_fields = true
+
+  access_logs {
+    bucket  = aws_s3_bucket.alb_logs.id
+    prefix  = "alb"
+    enabled = true
+  }
+
+  # La política debe existir antes de que el balanceador empiece a escribir logs.
+  depends_on = [aws_s3_bucket_policy.alb_logs]
 }
 
 resource "aws_lb_target_group" "gateway" {
