@@ -19,6 +19,11 @@ resource "aws_apigatewayv2_vpc_link" "gateway" {
   security_group_ids = [aws_security_group.vpc_link.id]
 }
 
+# Excepción revisada (SonarCloud: "Make sure creating a public API is safe here"): esta API es la única entrada
+# pública y es intencional, porque la app móvil llega aquí. No hay acceso a datos sin pasar por Kong, que valida
+# el JWT (festa-gateway), y los servicios quedan en la VPC detrás de un VPC Link. El acceso se acota con
+# throttling y con los security groups; no se agrega un autorizador de API Gateway porque el emisor del JWT
+# es auth-service, no un proveedor que API Gateway pueda validar.
 resource "aws_apigatewayv2_api" "main" {
   name          = local.name
   protocol_type = "HTTP"
