@@ -20,6 +20,13 @@ Ningún secreto real vive en el código. Esto es lo que hay en cada etapa y por 
   la misma (si cada una generara la suya, rechazaría los reintentos firmados por otra). En local sale de `.env`;
   en AWS la genera Terraform (`random_bytes`, estable mientras no cambie el estado) y llega como secreto de ECS.
   Rotarla pierde los reintentos que estén en vuelo (pasan a la DLQ); se redespliega con la nueva.
+  - Compose exige que no esté vacía (`:?`) y analytics se niega a arrancar con una clave vacía o de menos de 16
+    caracteres: una clave conocida dejaría la firma sin efecto.
+  - **Límites, para no sobrevalorarla:** en el Learner Lab todas las tareas usan `LabRole` y los secretos viven en un
+    único secreto JSON, así que ECS solo inyecta la variable a analytics pero otra tarea comprometida podría leer
+    la clave con las credenciales de su rol. Tampoco sustituye a los usuarios y permisos de RabbitMQ por servicio:
+    hoy todos comparten el mismo usuario, y la firma solo impide fabricar un reintento sin conocer la clave. En
+    una cuenta propia, el aislamiento real exige un rol de tarea por servicio con acceso solo a sus secretos.
 - Verificado (2026-10-29): en el historial completo de los 12 repos no hay ningún `.env` real ni
   ningún archivo de `secrets/` commiteado — solo los `.env.example` con placeholders (hoy existen en festa-infra, festa-auth-service, festa-user-service y festa-event-service).
 
