@@ -148,11 +148,9 @@ locals {
         { name = "WOMPI_ENV", value = var.wompi_env },
         { name = "WOMPI_PUBLIC_KEY", value = var.wompi_public_key },
         { name = "WOMPI_REDIRECT_URL", value = var.wompi_redirect_url },
-        { name = "WOMPI_FEE_PERCENT", value = "2.99" },
-        { name = "WOMPI_FEE_FIXED_CENTS", value = "0" },
+        { name = "WOMPI_FEE_PERCENT", value = "2.65" },
+        { name = "WOMPI_FEE_FIXED_CENTS", value = "70000" },
         { name = "IVA_PERCENT", value = "19" },
-        { name = "COMMISSION_PERCENT", value = tostring(var.commission_percent) },
-        { name = "COMMISSION_FIXED_CENTS", value = "0" },
         { name = "RESERVATION_HOLD_MINUTES", value = "15" },
         { name = "PAYMENTS_ALLOW_SIMULATION", value = tostring(var.payments_allow_simulation) },
       ])

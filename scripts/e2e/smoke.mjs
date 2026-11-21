@@ -174,7 +174,7 @@ async function main() {
   const order = (await api('POST', '/api/payments/orders', { token: user.token, body: { eventId: ticketed.eventId, quantity: 2 }, headers: { 'idempotency-key': `smoke-${run}` } })).data;
   if (!order.checkout?.checkoutUrl) throw new Error('la orden no trae el checkout de Wompi');
   await api('POST', `/api/payments/orders/${order.orderId}/simulate`, { token: user.token, body: { status: 'APPROVED' } });
-  ok(`total ${quote.totalCents / 100} COP (comisión ${quote.commissionCents / 100}); orden aprobada`);
+  ok(`total ${quote.totalCents / 100} COP (el comprador no paga comisión; Wompi se descuenta al comercio); orden aprobada`);
 
   title('RF10: booking emite un QR por boleta; el ingreso sirve una sola vez');
   const passes = await eventually('booking emite las boletas', async () => {
