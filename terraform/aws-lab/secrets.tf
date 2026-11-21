@@ -50,6 +50,11 @@ resource "random_bytes" "payment_inbox_retry" {
   length = 32
 }
 
+# Ídem para ai: la firma del origen de los reintentos de su inbox.
+resource "random_bytes" "ai_inbox_retry" {
+  length = 32
+}
+
 locals {
   secret_values = {
     JWT_PRIVATE_KEY     = tls_private_key.jwt.private_key_pem_pkcs8 # PKCS#8, como openssl genpkey; auth-service no lee PKCS#1
@@ -88,6 +93,7 @@ locals {
     # todas usan LabRole, que lee el secreto completo (ver SECRETS.md).
     ANALYTICS_INBOX_RETRY_KEY = random_bytes.analytics_inbox_retry.hex
     PAYMENT_INBOX_RETRY_KEY   = random_bytes.payment_inbox_retry.hex
+    AI_INBOX_RETRY_KEY        = random_bytes.ai_inbox_retry.hex
   }
 }
 

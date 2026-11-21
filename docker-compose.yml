@@ -293,6 +293,7 @@ services:
     environment:
       <<: *amqp-env
       PORT: 8086
+      INBOX_RETRY_KEY: ${AI_INBOX_RETRY_KEY:?define AI_INBOX_RETRY_KEY en .env (openssl rand -hex 32)}
       MONGO_URL: mongodb://ai_svc:${AI_MONGO_PASSWORD}@mongo:27017/ai_db?authSource=ai_db
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
       LLM_PROVIDER: ${LLM_PROVIDER}

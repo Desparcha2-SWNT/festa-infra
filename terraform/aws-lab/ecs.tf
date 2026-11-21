@@ -181,10 +181,11 @@ locals {
         { name = "AI_CHAT_RATE_LIMIT_PER_MIN", value = "10" },
       ])
       secrets = {
-        AMQP_URL       = "AMQP_URL"
-        MONGO_URL      = "AI_MONGO_URL"
-        JWT_PUBLIC_KEY = "JWT_PUBLIC_KEY"
-        LLM_API_KEY    = "LLM_API_KEY"
+        AMQP_URL        = "AMQP_URL"
+        MONGO_URL       = "AI_MONGO_URL"
+        JWT_PUBLIC_KEY  = "JWT_PUBLIC_KEY"
+        LLM_API_KEY     = "LLM_API_KEY"
+        INBOX_RETRY_KEY = "AI_INBOX_RETRY_KEY"
       }
     }
     # RF12: push con Firebase. Sin cuenta de servicio, las notificaciones quedan solo en la bandeja.

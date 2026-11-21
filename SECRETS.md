@@ -14,8 +14,8 @@ Ningún secreto real vive en el código. Esto es lo que hay en cada etapa y por 
   - Las llaves JWT RS256 y el secreto de firma del QR quedan en `./secrets/`, ignorado por git.
   - `PII_ENCRYPTION_KEY` es la excepción: se escribe directo en `.env` (sustituye el valor vacío
     de la plantilla), no en `./secrets/` — ver `scripts/gen-secrets.sh`.
-- `ANALYTICS_INBOX_RETRY_KEY` y `PAYMENT_INBOX_RETRY_KEY` firman el origen de los reintentos de la inbox de
-  analytics y de payment (HMAC); cada servicio la lee como `INBOX_RETRY_KEY`. Con las
+- `ANALYTICS_INBOX_RETRY_KEY`, `PAYMENT_INBOX_RETRY_KEY` y `AI_INBOX_RETRY_KEY` firman el origen de los reintentos
+  de la inbox de analytics, payment y ai (HMAC); cada servicio la lee como `INBOX_RETRY_KEY`. Con las
   credenciales de RabbitMQ compartidas, cualquiera puede publicar directo en una inbox; sin esta clave no puede
   fabricar un reintento válido. Es una clave **por servicio** y **todas las réplicas** de ese servicio deben usar
   la misma (si cada una generara la suya, rechazaría los reintentos firmados por otra). En local las genera
