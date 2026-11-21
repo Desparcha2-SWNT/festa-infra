@@ -39,6 +39,12 @@ resource "random_bytes" "pii_key" {
   length = 32
 }
 
+# Firma el origen de los reintentos de la inbox de analytics (HMAC). Estable entre despliegues y compartida por todas
+# las réplicas: si cada réplica generara la suya, una rechazaría los reintentos firmados por otra.
+resource "random_bytes" "analytics_inbox_retry" {
+  length = 32
+}
+
 locals {
   secret_values = {
     JWT_PRIVATE_KEY     = tls_private_key.jwt.private_key_pem_pkcs8 # PKCS#8, como openssl genpkey; auth-service no lee PKCS#1
@@ -72,6 +78,9 @@ locals {
     LLM_API_KEY = coalesce(var.llm_api_key, "none")
     # GitHub entrega "" si el secreto no existe: {} = placeholder (sin push).
     FCM_SERVICE_ACCOUNT_JSON = coalesce(var.fcm_service_account_json, "{}")
+
+    # Una clave por servicio: un servicio comprometido no puede firmar los reintentos de otro.
+    ANALYTICS_INBOX_RETRY_KEY = random_bytes.analytics_inbox_retry.hex
   }
 }
 

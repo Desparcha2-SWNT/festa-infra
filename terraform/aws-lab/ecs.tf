@@ -213,9 +213,10 @@ locals {
         { name = "PORT", value = "8088" },
       ])
       secrets = {
-        AMQP_URL       = "AMQP_URL"
-        MONGO_URL      = "ANALYTICS_MONGO_URL"
-        JWT_PUBLIC_KEY = "JWT_PUBLIC_KEY"
+        AMQP_URL        = "AMQP_URL"
+        MONGO_URL       = "ANALYTICS_MONGO_URL"
+        JWT_PUBLIC_KEY  = "JWT_PUBLIC_KEY"
+        INBOX_RETRY_KEY = "ANALYTICS_INBOX_RETRY_KEY"
       }
     }
   }
