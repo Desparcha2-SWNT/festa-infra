@@ -19,6 +19,11 @@ resource "aws_apigatewayv2_vpc_link" "gateway" {
   security_group_ids = [aws_security_group.vpc_link.id]
 }
 
+# Excepción revisada (SonarCloud: "Make sure creating a public API is safe here"): esta API es la única entrada
+# pública y es intencional, porque la app móvil llega aquí. La autenticación la hace Kong por ruta (festa-gateway):
+# exige JWT en las rutas de /api, salvo las de sesión en /api/auth (registro, inicio, renovación y cierre). El
+# webhook de Wompi es público porque payment-service verifica su firma. Hay un límite global en el stage y límites
+# por ruta en Kong, y los servicios quedan en la VPC detrás de un VPC Link. API Gateway no repite la validación.
 resource "aws_apigatewayv2_api" "main" {
   name          = local.name
   protocol_type = "HTTP"
