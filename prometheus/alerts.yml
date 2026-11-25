@@ -1,0 +1,121 @@
+# Alertas básicas de Festa (SCRUM-47). Se ven en Prometheus (/alerts) y en Grafana (Alerting → reglas del
+# datasource). Los umbrales están pensados para el piloto: poco tráfico, así que las reglas de tasa exigen un
+# mínimo de peticiones para no disparar con 1 error de 2 peticiones.
+groups:
+  - name: festa-disponibilidad
+    rules:
+      - alert: FestaServicioCaido
+        expr: up{job="festa-services"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $labels.service }} no responde"
+          description: "Prometheus no puede leer /metrics de {{ $labels.service }} hace más de 2 minutos."
+
+      - alert: FestaGatewayCaido
+        expr: up{job="kong"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "El gateway (Kong) no responde"
+          description: "La app no puede llegar a ningún servicio."
+
+      - alert: FestaRabbitMQCaido
+        expr: up{job="rabbitmq"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "RabbitMQ no responde"
+          description: "Los servicios no pueden intercambiar eventos; los outbox van a acumular mensajes."
+
+  - name: festa-trafico
+    rules:
+      - alert: FestaErroresAltos
+        expr: |
+          (
+            sum by (service) (rate(kong_http_requests_total{code=~"5.."}[5m]))
+            / sum by (service) (rate(kong_http_requests_total[5m]))
+          ) > 0.05
+          and sum by (service) (rate(kong_http_requests_total[5m])) > 0.05
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.service }}: más del 5 % de respuestas 5xx"
+          description: "{{ $value | humanizePercentage }} de las peticiones a {{ $labels.service }} terminan en error 5xx."
+
+      - alert: FestaLatenciaAlta
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (rate(kong_request_latency_ms_bucket{service!~"ai-service|event-service"}[5m]))
+          ) > 1000
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.service }}: p95 por encima de 1 s"
+          description: "El 5 % más lento de las peticiones a {{ $labels.service }} tarda {{ $value | humanize }} ms."
+
+      # RNF1: el mapa debe cargar los eventos visibles en menos de 2 s.
+      - alert: FestaMapaLento
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(kong_request_latency_ms_bucket{service="event-service"}[5m]))
+          ) > 2000
+        for: 5m
+        labels: { severity: warning, rnf: RNF1 }
+        annotations:
+          summary: "event-service: p95 por encima de 2 s (RNF1)"
+          description: "El mapa tarda {{ $value | humanize }} ms en el percentil 95. Revisar la caché de Redis."
+
+      # El LLM es lento por naturaleza; solo alertamos si se acerca al corte de 30 s de API Gateway.
+      - alert: FestaIALenta
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(kong_request_latency_ms_bucket{service="ai-service"}[5m]))
+          ) > 15000
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "ai-service: p95 por encima de 15 s"
+          description: "El chat tarda {{ $value | humanize }} ms; API Gateway corta a los 30 s."
+
+      - alert: FestaRateLimitFrecuente
+        expr: sum by (service) (rate(kong_http_requests_total{code="429"}[5m])) > 0.5
+        for: 10m
+        labels: { severity: info }
+        annotations:
+          summary: "{{ $labels.service }}: muchas respuestas 429"
+          description: "Usuarios reales podrían estar chocando con el rate limit, o hay un cliente abusando."
+
+  - name: festa-mensajeria
+    rules:
+      - alert: FestaMensajesEnDLQ
+        expr: sum by (queue) (rabbitmq_detailed_queue_messages{queue=~".*\\.dlq"}) > 0
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: "Hay {{ $value }} mensajes en {{ $labels.queue }}"
+          description: "Un consumidor agotó los reintentos o recibió un mensaje inválido. Revisar el log del servicio y reinyectar desde la UI de RabbitMQ."
+
+      - alert: FestaColaAtascada
+        expr: rabbitmq_detailed_queue_messages{queue=~".*\\.inbox"} > 100
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.queue }} acumula {{ $value }} mensajes"
+          description: "El consumidor está caído o no da abasto."
+
+      - alert: FestaOutboxAtascado
+        expr: festa_outbox_pending > 20
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.service }}: {{ $value }} eventos sin publicar"
+          description: "El outbox no logra publicar en RabbitMQ."
+
+      - alert: FestaRabbitMQSinMemoria
+        expr: max(rabbitmq_alarms_memory_used_watermark) == 1
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "RabbitMQ llegó a su tope de memoria"
+          description: "RabbitMQ está frenando a los publicadores. Revisar colas acumuladas."
