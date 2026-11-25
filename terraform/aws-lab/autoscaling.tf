@@ -6,6 +6,8 @@
 #   - Sube rápido (enfriamiento 60 s) y baja despacio (300 s) para no oscilar con picos cortos.
 #   - Mínimo y máximo por servicio en var.autoscaling_limits.
 # Solo aplica a servicios con réplicas (> 0). RabbitMQ y Mongo tienen estado y no se autoescalan.
+# Cada `apply` devuelve las réplicas a desired_count y el autoescalado las ajusta de nuevo. No se usa ignore_changes
+# porque services_desired_count dejaría de poder subir o bajar el entorno.
 #
 # Nota del Learner Lab: Application Auto Scaling usa el rol vinculado AWSServiceRoleForApplicationAutoScaling_ECSService.
 # Si la cuenta del lab no permite crearlo, el apply falla en estos recursos: vuelve a enable_autoscaling=false.

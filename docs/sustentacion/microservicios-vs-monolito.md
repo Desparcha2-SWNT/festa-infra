@@ -1,7 +1,7 @@
 # ¿Por qué microservicios y no un monolito?
 
 **Jira:** SCRUM-132 · **Para:** la sustentación (pregunta del profesor)
-**Relacionados:** ADR 0001 (AWS Learner Lab), ADR 0002 (bases de datos), `stateless-contenedores-autoescalado.md`
+**Relacionados:** ADR 0001 (AWS Learner Lab), [ADR 0002 (bases de datos)](https://github.com/Desparcha2-SWNT/.github/blob/develop/docs/adr/0002-motores-de-base-de-datos.md), `stateless-contenedores-autoescalado.md`
 
 ## Respuesta corta
 
@@ -22,14 +22,14 @@ El costo de esa decisión lo pagamos en complejidad: mensajería asíncrona, con
 
 | Criterio | Monolito | Microservicios (lo que hicimos) |
 |---|---|---|
-| **Costo de infraestructura (piloto)** | Bajo: 1 contenedor (0,5 vCPU, 1 GB) + RDS + ALB. Unos USD 47/mes | Unas 4 veces más: 9 contenedores + RabbitMQ + Mongo en Fargate (~USD 128) + RDS + ElastiCache + ALB y NLB. Unos USD 185/mes encendido 24/7 (us-east-1). En el lab se apaga al terminar cada sesión |
+| **Costo fijo de infraestructura (piloto)** | Bajo: 1 contenedor (0,5 vCPU, 1 GB) con IPv4 pública + RDS + ALB + almacenamiento. Unos USD 54/mes | Unas 4 veces más: 11 tareas en Fargate (9 contenedores, RabbitMQ y Mongo; USD 127,76), IPv4 públicas (40,15), RDS (13,14), ElastiCache (12,41), ALB y NLB (32,85) y almacenamiento (4,20): **USD 230,51/mes** encendido 24/7 (us-east-1). Con tráfico e IA, USD 276,70 en la fase 1 ([modelo de costos](https://github.com/Desparcha2-SWNT/.github/blob/develop/docs/costos/modelo-costos.md)). En el lab se apaga al terminar cada sesión |
 | **Complejidad de desarrollo** | Baja: llamadas a funciones, una transacción para todo | Alta: eventos asíncronos, consistencia eventual, contratos, idempotencia |
 | **Complejidad de operación** | Un despliegue, un log | 9 despliegues, logs distribuidos (se compensa con `correlationId` y tableros) |
 | **Escalar** | Todo o nada: para aguantar el mapa se replica también pagos e IA | Por servicio: event y booking hasta 3 réplicas, el resto hasta 2 |
 | **Aislamiento de fallas** | Un error de memoria en la IA tumba los pagos | La falla queda en su servicio; los mensajes esperan en la cola y se reintentan |
 | **Trabajo en paralelo** | Un repo, conflictos constantes de merge | Un repo por servicio; el contrato de eventos es el acuerdo entre equipos |
 | **Tecnología** | Un solo lenguaje y una sola base | La herramienta adecuada por servicio: Java en auth y user, Node, Python para IA, PostGIS para el mapa, Mongo para documentos |
-| **Riesgo para el piloto** | Bajo técnicamente | Mayor: más piezas que pueden fallar. Lo cubren las pruebas de punta a punta (`scripts/e2e/smoke.mjs`) y las alertas |
+| **Riesgo para el piloto** | Bajo técnicamente | Mayor: más piezas que pueden fallar. Lo cubren las pruebas de punta a punta (`scripts/e2e/smoke.mjs`); las alertas están propuestas en festa-infra#24, para Docker Compose |
 
 ## Qué se pierde y qué se gana en un piloto con pocos usuarios
 
@@ -59,7 +59,7 @@ El costo de esa decisión lo pagamos en complejidad: mensajería asíncrona, con
 - **Infraestructura:** la de hoy. ECS Fargate con 1 réplica por servicio, RDS `db.t3.micro`, Mongo en Fargate y ElastiCache `t3.micro`.
 - **Autoescalado:** listo pero con máximos bajos (2–3 réplicas).
 - **Foco:** validar el producto (¿la gente encuentra planes en el mapa? ¿los comercios venden?) y medir con los tableros de Grafana.
-- **Costo:** dentro de los créditos del Learner Lab.
+- **Costo:** dentro de los créditos del Learner Lab solo si el entorno se apaga entre sesiones (USD 50 alcanzan para unas 158 horas encendido).
 
 ### Año 2 · Varias universidades
 - **Salir del Learner Lab** a una cuenta de AWS normal: dominio propio, certificado ACM, Cloud Map y roles IAM.
@@ -83,7 +83,7 @@ El costo de esa decisión lo pagamos en complejidad: mensajería asíncrona, con
 
 ## Recomendación
 
-**Seguir con microservicios**, porque ya están construidos, probados de punta a punta y desplegados. Para el piloto pagamos un sobrecosto conocido a cambio de un equipo que trabaja en paralelo, fallas aisladas y un camino de crecimiento sin reescritura.
+**Seguir con microservicios**, porque ya están construidos y tienen pruebas automatizadas. En AWS solo se han desplegado gateway, auth, user y event (7 de noviembre, en un entorno que ya se destruyó); falta desplegar el resto. Para el piloto pagamos un sobrecosto conocido a cambio de un equipo que trabaja en paralelo, fallas aisladas y un camino de crecimiento sin reescritura.
 
 ### Qué señal nos haría cambiar de decisión
 

@@ -1,7 +1,7 @@
 # Servicios sin estado, contenedores y autoescalado
 
 **Jira:** SCRUM-135 · **Para:** la sustentación (retroalimentación del profesor sobre contenedores y autoescalado)
-**Relacionados:** ADR 0001 (AWS Learner Lab), ADR 0002 (bases de datos), `terraform/aws-lab/autoscaling.tf`
+**Relacionados:** ADR 0001 (AWS Learner Lab), [ADR 0002 (bases de datos)](https://github.com/Desparcha2-SWNT/.github/blob/develop/docs/adr/0002-motores-de-base-de-datos.md), `terraform/aws-lab/autoscaling.tf`
 
 ## 1. Qué significa que un servicio no tenga estado
 
@@ -73,13 +73,15 @@ internet ─HTTPS─► API Gateway ─► ALB interno ─► Kong ×1..3 ─►
 
 **Disparo, en concreto:** si el promedio de CPU de event-service pasa de 60 %, ECS agrega una réplica (hasta 3). Cuando baja de 60 % por 5 minutos, quita réplicas (hasta 1).
 
+**Al volver a aplicar Terraform:** cada `terraform apply` devuelve las réplicas al número configurado (`desired_count`) y el autoescalado las ajusta de nuevo. No se usa `ignore_changes` porque entonces `services_desired_count` dejaría de poder subir o bajar el entorno.
+
 **Por qué el mínimo es 1 y no 2:** en el piloto el tráfico es bajo y el lab cobra por tarea encendida. Si un contenedor muere, ECS lo reemplaza en 1 a 3 minutos. En producción el mínimo sería 2 por servicio crítico (gateway, auth, event, booking), para no tener caídas durante ese reemplazo.
 
 ### Cómo mostrarlo en la sustentación
 
-1. Desplegar con `enable_autoscaling = true` (workflow **Deploy AWS lab**, o `terraform apply -var enable_autoscaling=true`).
+1. Desplegar con `terraform apply -var enable_autoscaling=true`. El workflow **Deploy AWS lab** todavía no tiene esa opción.
 2. Mostrar en la consola de ECS → servicio `event` → pestaña **Auto Scaling** la política creada (captura de pantalla).
-3. Opcional, demo en vivo: generar carga contra el mapa (por ejemplo `npx autocannon -c 50 -d 300 <API>/api/events/clusters?...` con un token) y ver en ECS cómo `desired count` pasa de 1 a 2 o 3. El tablero **Festa · Servicio** de Grafana muestra la subida de peticiones y latencia.
+3. Opcional, demo en vivo: generar carga contra el mapa (por ejemplo `npx autocannon -c 50 -d 300 <API>/api/events/clusters?...` con un token) y ver en ECS cómo `desired count` pasa de 1 a 2 o 3. Las métricas de CPU del servicio en la consola de ECS muestran la subida. Grafana (festa-infra#24) corre solo en Docker Compose, no en AWS.
 
 Si el Learner Lab no permite crear el rol vinculado de Application Auto Scaling, el apply falla en esos recursos. En ese caso se muestra el archivo `autoscaling.tf` y se explica la política.
 
@@ -93,7 +95,7 @@ En la entrada de un evento puede no haber señal. El diseño:
 4. **Quien escanea sí necesita conexión.** El organizador valida contra booking-service, que verifica la firma y marca el pase como usado de forma atómica (RNF7: un solo uso).
 5. **Pase revocado:** si el evento se cancela o la boleta se reembolsa, el pase guardado en el teléfono deja de servir, porque el servidor lo rechaza al escanear (`revoked`). La app lo marca como inválido la próxima vez que tenga conexión.
 
-**Estado actual:** "Mis entradas" está en revisión (SCRUM-90, rama `feature/SCRUM-90-mis-entradas-qr` de festa-mobile). El caché sin conexión es la tarea SCRUM-91, aún pendiente.
+**Estado actual (25 de noviembre):** "Mis entradas" ya está en `develop` de festa-mobile (SCRUM-90, #32). La copia sin conexión (SCRUM-91) está en revisión en festa-mobile#41: es por cuenta, se refresca al volver a la app y se borra al cerrar sesión.
 
 ## 6. Pendiente fuera del repo
 
