@@ -66,7 +66,7 @@ locals {
       command = "${local.write_private_key} && ${local.write_public_key} && exec java -jar app.jar"
       environment = concat(local.amqp_env, [
         { name = "SERVER_PORT", value = "8081" },
-        { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.main.address}:5432/auth_db" },
+        { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.main.address}:5432/auth_db?sslmode=require" },
         { name = "DB_USER", value = "auth_svc" },
         { name = "JWT_PRIVATE_KEY_PATH", value = "/tmp/jwt_private.pem" },
         { name = "JWT_ACCESS_TTL_MINUTES", value = "15" },
@@ -91,9 +91,9 @@ locals {
       command = "${local.write_public_key} && exec java $JAVA_OPTS -jar /app/app.jar"
       environment = concat(local.amqp_env, [
         { name = "SERVER_PORT", value = "8082" },
-        { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.main.address}:5432/user_db" },
+        { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.main.address}:5432/user_db?sslmode=require" },
         { name = "DB_USER", value = "user_svc" },
-        { name = "REDIS_HOST", value = aws_elasticache_cluster.redis.cache_nodes[0].address },
+        { name = "REDIS_HOST", value = aws_elasticache_replication_group.redis.primary_endpoint_address },
         { name = "REDIS_PORT", value = "6379" },
         { name = "REDIS_DATABASE", value = "2" },
         { name = "AUTH_BASE_URL", value = local.internal_url["auth"] },
@@ -172,7 +172,7 @@ locals {
       command = "${local.write_public_key} && exec uvicorn app.main:app --host 0.0.0.0 --port 8086 --proxy-headers --forwarded-allow-ips='*'"
       environment = concat(local.amqp_env, [
         { name = "PORT", value = "8086" },
-        { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:6379/1" },
+        { name = "REDIS_URL", value = "redis://${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379/1" },
         { name = "LLM_PROVIDER", value = var.llm_provider },
         { name = "LLM_CHAT_MODEL", value = var.llm_chat_model },
         { name = "LLM_DESCRIPTION_MODEL", value = var.llm_description_model },
