@@ -5,6 +5,11 @@
 #   servicio tiene un puerto (8081 auth … 8088 analytics), RabbitMQ el 5672 y MongoDB el 27017. Kong recibe estas URLs
 #   por variables de entorno (festa-gateway#5). Es NLB y no ALB porque AMQP es TCP, no HTTP.
 
+# Excepción revisada (SonarCloud: "Omitting access_logs makes logs incomplete"): este balanceador no guarda logs
+# de acceso. Un ALB registra la URL completa, y la app pide el mapa con lat y lng en la consulta, así que esos logs
+# serían una copia más de la ubicación de las personas (RNF5, Ley 1581). Además, detrás del VPC Link el ALB no ve
+# la IP del cliente. Los accesos se consultan en los logs de API Gateway (apigw.tf): IP, método, ruta sin la
+# consulta, estado y latencia. Para activarlos habría que sacar antes la ubicación de la URL.
 resource "aws_lb" "gateway" {
   name                       = "${local.name}-alb"
   load_balancer_type         = "application"
