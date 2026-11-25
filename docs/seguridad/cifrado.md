@@ -9,6 +9,7 @@
 | **App → gateway (HTTPS)** | Kong en `:8443`, **solo TLS 1.3** (`KONG_SSL_CIPHER_SUITE=modern`), certificado autofirmado | **API Gateway** termina TLS con certificado de AWS. Política `TLS_1_2`: acepta TLS 1.2 y 1.3, rechaza 1.0 y 1.1. Ver "TLS 1.3 en AWS" |
 | **Dentro de la red** (gateway → servicios → RabbitMQ) | HTTP y AMQP sin TLS dentro de la red de Docker | HTTP dentro de la VPC: balanceadores internos sin IP pública, más security groups |
 | **Servicios → PostgreSQL** | Sin TLS (misma máquina) | **TLS obligatorio:** RDS PostgreSQL 16 trae `rds.force_ssl=1`; Node usa `sslmode=no-verify` y Java `sslmode=require` |
+| **Servicios → Redis** | Sin TLS (misma máquina) | **TLS obligatorio:** ElastiCache `transit_encryption_enabled = true`; user usa `SPRING_DATA_REDIS_SSL_ENABLED=true` y ai `rediss://` |
 | **PostgreSQL en reposo** | Volumen de Docker sin cifrar (portátil de desarrollo) | **RDS `storage_encrypted = true`**: AES-256 con llave administrada por AWS (KMS) |
 | **MongoDB en reposo** | Volumen de Docker sin cifrar | **EFS `encrypted = true`** (AES-256) y TLS en el montaje (`transit_encryption = "ENABLED"`) |
 | **Redis en reposo** | Sin cifrar (solo caché) | **ElastiCache `at_rest_encryption_enabled = true`** (AES-256). Agregado en SCRUM-48 |
