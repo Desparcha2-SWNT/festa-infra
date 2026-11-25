@@ -42,6 +42,8 @@ resource "aws_elasticache_subnet_group" "main" {
 # cifrado en reposo (SCRUM-48): user-service guarda perfiles en la base 2.
 # Sin AUTH ni TLS en tránsito: ElastiCache solo acepta token con TLS, y los clientes de hoy no usan TLS. El
 # acceso queda limitado por el security group a las tareas de ECS, dentro de la VPC.
+# AVD-AWS-0051 (TLS en tránsito): excepción aceptada por lo anterior; ver docs/seguridad/cifrado.md.
+#trivy:ignore:AVD-AWS-0051
 resource "aws_elasticache_replication_group" "redis" {
   replication_group_id       = local.name
   description                = "Festa: caché del mapa (db 0), rate limit de IA (db 1) y perfiles (db 2)"
