@@ -1,0 +1,11 @@
+apiVersion: 1
+providers:
+  # Tableros de Festa (SCRUM-47). Se editan en el JSON; los cambios desde la UI no se guardan.
+  - name: festa
+    folder: Festa
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 60
+    options:
+      path: /etc/grafana/provisioning/dashboards/json
