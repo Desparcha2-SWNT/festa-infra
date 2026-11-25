@@ -39,7 +39,7 @@ resource "aws_elasticache_subnet_group" "main" {
 
 # Nodo único con cluster mode desactivado: es el único modo en que Redis permite usar las bases 0, 1 y 2.
 # Es un replication group de un solo nodo (no aws_elasticache_cluster) porque solo así ElastiCache permite
-# cifrado en reposo (SCRUM-48): user-service guarda perfiles en la base 2.
+# cifrado en reposo (SCRUM-48): user-service usa la base 2 como caché de perfiles.
 # Sin AUTH ni TLS en tránsito: ElastiCache solo acepta token con TLS, y los clientes de hoy no usan TLS. El
 # acceso queda limitado por el security group a las tareas de ECS, dentro de la VPC.
 # AVD-AWS-0051 (TLS en tránsito): excepción aceptada por lo anterior; ver docs/seguridad/cifrado.md.

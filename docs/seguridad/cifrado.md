@@ -29,7 +29,7 @@ Además del cifrado del disco, los campos personales se cifran **antes** de lleg
 
 | Servicio | Dato | Por qué no se cifra en la app | Cómo se protege |
 |---|---|---|---|
-| notification | Última ubicación del usuario | Se busca con consultas geográficas de Mongo (`$centerSphere`), que no funcionan sobre datos cifrados | Solo con consentimiento (RNF5); vence a las 72 h; se borra al revocar el consentimiento; EFS cifrado en AWS |
+| notification | Última ubicación del usuario | Se busca con consultas geográficas de Mongo (`$centerSphere`), que no funcionan sobre datos cifrados | Solo con consentimiento (RNF5). A las 72 h deja de usarse para los avisos, pero se conserva hasta que se revoca el consentimiento o se borra la cuenta; no hay borrado automático. EFS cifrado en AWS |
 | booking | Nombre para mostrar del asistente | Lo ve el organizador en la lista de asistentes; solo id y nombre, sin correo (`account.display_name_set`) | Base cifrada en RDS; se borra con `account.deleted` |
 | ai | Historial del chat | El usuario puede escribir cualquier cosa | EFS cifrado; el usuario lo borra con `DELETE /api/ai/chat/history` |
 
