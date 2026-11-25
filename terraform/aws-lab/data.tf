@@ -40,10 +40,8 @@ resource "aws_elasticache_subnet_group" "main" {
 # Nodo único con cluster mode desactivado: es el único modo en que Redis permite usar las bases 0, 1 y 2.
 # Es un replication group de un solo nodo (no aws_elasticache_cluster) porque solo así ElastiCache permite
 # cifrado en reposo (SCRUM-48): user-service usa la base 2 como caché de perfiles.
-# Sin AUTH ni TLS en tránsito: ElastiCache solo acepta token con TLS, y los clientes de hoy no usan TLS. El
-# acceso queda limitado por el security group a las tareas de ECS, dentro de la VPC.
-# AVD-AWS-0051 (TLS en tránsito): excepción aceptada por lo anterior; ver docs/seguridad/cifrado.md.
-#trivy:ignore:AVD-AWS-0051
+# TLS en tránsito obligatorio: user-service se conecta con SPRING_DATA_REDIS_SSL_ENABLED y ai-service con rediss://
+# (ecs.tf). Sin AUTH: el acceso queda limitado por el security group a las tareas de ECS, dentro de la VPC.
 resource "aws_elasticache_replication_group" "redis" {
   replication_group_id       = local.name
   description                = "Festa: caché del mapa (db 0), rate limit de IA (db 1) y perfiles (db 2)"
@@ -58,6 +56,6 @@ resource "aws_elasticache_replication_group" "redis" {
   security_group_ids         = [aws_security_group.cache.id]
   # Cifrado en reposo con AES-256 (llave administrada por AWS).
   at_rest_encryption_enabled = true
-  transit_encryption_enabled = false
+  transit_encryption_enabled = true
   apply_immediately          = true
 }

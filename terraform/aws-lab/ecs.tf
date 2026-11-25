@@ -96,6 +96,8 @@ locals {
         { name = "REDIS_HOST", value = aws_elasticache_replication_group.redis.primary_endpoint_address },
         { name = "REDIS_PORT", value = "6379" },
         { name = "REDIS_DATABASE", value = "2" },
+        # ElastiCache exige TLS: Spring Boot lo lee como spring.data.redis.ssl.enabled.
+        { name = "SPRING_DATA_REDIS_SSL_ENABLED", value = "true" },
         { name = "AUTH_BASE_URL", value = local.internal_url["auth"] },
       ])
       secrets = {
@@ -172,7 +174,7 @@ locals {
       command = "${local.write_public_key} && exec uvicorn app.main:app --host 0.0.0.0 --port 8086 --proxy-headers --forwarded-allow-ips='*'"
       environment = concat(local.amqp_env, [
         { name = "PORT", value = "8086" },
-        { name = "REDIS_URL", value = "redis://${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379/1" },
+        { name = "REDIS_URL", value = "rediss://${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379/1" },
         { name = "LLM_PROVIDER", value = var.llm_provider },
         { name = "LLM_CHAT_MODEL", value = var.llm_chat_model },
         { name = "LLM_DESCRIPTION_MODEL", value = var.llm_description_model },
