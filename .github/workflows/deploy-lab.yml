@@ -98,7 +98,9 @@ jobs:
             case "$SERVICE" in auth|user|event|booking|payment|ai|notification|analytics|gateway) ;; *) echo "::error::servicio desconocido: $SERVICE"; exit 1;; esac
             case "$SERVICE_TAG" in latest|sha-[0-9a-f]*) ;; *) echo "::error::tag inválido: $SERVICE_TAG"; exit 1;; esac
             case "$SERVICE_TAG" in *[!a-z0-9-]*) echo "::error::tag inválido: $SERVICE_TAG"; exit 1;; esac
-            args="$args -var image_tags={\"$SERVICE\"=\"$SERVICE_TAG\"}"
+            # Comillas simples: el valor llega a la línea de terraform y, sin ellas, bash quita las comillas dobles
+            # y Terraform lee el tag como una variable ("Variables not allowed").
+            args="$args -var 'image_tags={\"$SERVICE\"=\"$SERVICE_TAG\"}'"
           fi
           echo "action=$ACTION" >> "$GITHUB_OUTPUT"
           echo "args=$args" >> "$GITHUB_OUTPUT"
