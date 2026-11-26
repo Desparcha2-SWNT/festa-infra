@@ -18,6 +18,17 @@ resource "random_password" "rabbitmq" {
   special = false
 }
 
+resource "random_password" "mongo" {
+  length  = 32
+  special = false
+}
+
+# HMAC de los QR de booking-service (RF10/RNF7).
+resource "random_password" "qr" {
+  length  = 44
+  special = false
+}
+
 resource "random_password" "admin" {
   length  = 20
   special = false
@@ -28,9 +39,25 @@ resource "random_bytes" "pii_key" {
   length = 32
 }
 
+# Firma el origen de los reintentos de la inbox de analytics (HMAC). Estable entre despliegues y compartida por todas
+# las réplicas: si cada réplica generara la suya, una rechazaría los reintentos firmados por otra.
+resource "random_bytes" "analytics_inbox_retry" {
+  length = 32
+}
+
+# Ídem para payment: la firma del origen de los reintentos de su inbox.
+resource "random_bytes" "payment_inbox_retry" {
+  length = 32
+}
+
+# Ídem para ai: la firma del origen de los reintentos de su inbox.
+resource "random_bytes" "ai_inbox_retry" {
+  length = 32
+}
+
 locals {
   secret_values = {
-    JWT_PRIVATE_KEY     = tls_private_key.jwt.private_key_pem
+    JWT_PRIVATE_KEY     = tls_private_key.jwt.private_key_pem_pkcs8 # PKCS#8, como openssl genpkey; auth-service no lee PKCS#1
     JWT_PUBLIC_KEY      = tls_private_key.jwt.public_key_pem
     PII_ENCRYPTION_KEY  = random_bytes.pii_key.base64
     ADMIN_PASSWORD      = random_password.admin.result
@@ -43,6 +70,30 @@ locals {
     PAYMENT_DB_PASSWORD = random_password.db["payment"].result
     AMQP_URL            = "amqp://festa:${random_password.rabbitmq.result}@${aws_lb.internal.dns_name}:5672"
     EVENT_DATABASE_URL  = "postgres://event_svc:${random_password.db["event"].result}@${aws_db_instance.main.address}:5432/event_db?sslmode=no-verify"
+
+    BOOKING_DATABASE_URL = "postgres://booking_svc:${random_password.db["booking"].result}@${aws_db_instance.main.address}:5432/booking_db?sslmode=no-verify"
+    PAYMENT_DATABASE_URL = "postgres://payment_svc:${random_password.db["payment"].result}@${aws_db_instance.main.address}:5432/payment_db?sslmode=no-verify"
+    QR_SIGNING_SECRET    = random_password.qr.result
+    MONGO_ROOT_PASSWORD  = random_password.mongo.result
+    # Usuario raíz con authSource=admin: Mongo es una sola tarea (ecs.tf, datos en EFS) y cada servicio usa su base.
+    AI_MONGO_URL           = "mongodb://festa:${random_password.mongo.result}@${aws_lb.internal.dns_name}:27017/ai_db?authSource=admin"
+    NOTIFICATION_MONGO_URL = "mongodb://festa:${random_password.mongo.result}@${aws_lb.internal.dns_name}:27017/notification_db?authSource=admin"
+    ANALYTICS_MONGO_URL    = "mongodb://festa:${random_password.mongo.result}@${aws_lb.internal.dns_name}:27017/analytics_db?authSource=admin"
+    # Llegan por variables sensibles (TF_VAR_...), nunca desde el repo. Ningún valor queda vacío: GitHub entrega
+    # "" cuando un secreto no existe, y entonces se usan los placeholders de prueba.
+    WOMPI_PRIVATE_KEY      = coalesce(var.wompi_private_key, "prv_test_xxx")
+    WOMPI_EVENTS_SECRET    = coalesce(var.wompi_events_secret, "test_events_xxx")
+    WOMPI_INTEGRITY_SECRET = coalesce(var.wompi_integrity_secret, "test_integrity_xxx")
+    # "none" = sin llave: ai-service usa respuestas locales de ejemplo.
+    LLM_API_KEY = coalesce(var.llm_api_key, "none")
+    # GitHub entrega "" si el secreto no existe: {} = placeholder (sin push).
+    FCM_SERVICE_ACCOUNT_JSON = coalesce(var.fcm_service_account_json, "{}")
+
+    # Claves que firman el origen de los reintentos de cada inbox. En el Learner Lab no aíslan frente a otras tareas:
+    # todas usan LabRole, que lee el secreto completo (ver SECRETS.md).
+    ANALYTICS_INBOX_RETRY_KEY = random_bytes.analytics_inbox_retry.hex
+    PAYMENT_INBOX_RETRY_KEY   = random_bytes.payment_inbox_retry.hex
+    AI_INBOX_RETRY_KEY        = random_bytes.ai_inbox_retry.hex
   }
 }
 

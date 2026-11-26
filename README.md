@@ -20,7 +20,7 @@ Infraestructura local de Festa (Docker Compose) y **contratos de mensajería** d
 
 ```bash
 cp .env.example .env          # edita contraseñas
-./scripts/gen-secrets.sh      # llaves JWT, secreto de QR, PII_ENCRYPTION_KEY
+./scripts/gen-secrets.sh      # llaves JWT, secreto de QR, PII_ENCRYPTION_KEY y claves de reintentos de inbox
 docker compose up -d          # solo infraestructura
 docker compose --profile auth --profile gateway up -d --build
 docker compose --profile all up -d --build
@@ -29,6 +29,22 @@ docker compose --profile all up -d --build
 Los servicios se construyen desde las carpetas hermanas (`../festa-<servicio>`), así que hay que clonar todos los repos en el mismo directorio padre.
 
 Los scripts de `postgres/init` y `mongo/init` solo corren con el volumen vacío. Para recrear: `docker compose down -v`.
+
+## Prueba de punta a punta
+
+Con todo arriba y `PAYMENTS_ALLOW_SIMULATION=true` en `.env` (solo desarrollo), este script recorre el MVP completo a
+través de Kong, como la app: registro (RF1), perfil y consentimiento (RF2/RNF5), verificación del comercio (RF3),
+descripción con IA (RF9), evento con boletería y Parche en Vivo (RF4/RF19), mapa y búsqueda (RF5/RF6), chat de
+recomendaciones (RF8), asistencia (RF7), compra con comisión (RF11), QR de un solo uso (RF10), notificaciones (RF12),
+panel del comercio (RF15) y moderación (RF14).
+
+```bash
+docker compose --profile all up -d --build
+node scripts/e2e/smoke.mjs        # GATEWAY_URL=http://localhost:8000 por defecto
+```
+
+Sin `LLM_API_KEY`, ai-service usa respuestas locales de ejemplo; sin la cuenta de servicio de Firebase, notification
+deja los avisos solo en la bandeja de la app.
 
 ## Secretos
 

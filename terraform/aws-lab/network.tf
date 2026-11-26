@@ -24,17 +24,37 @@ locals {
   vpc_cidr   = data.aws_vpc.default.cidr_block
 }
 
-resource "aws_security_group" "alb" {
-  name        = "${local.name}-alb"
-  description = "ALB publico: HTTP desde internet hacia Kong"
+# Interfaces del VPC Link de API Gateway: solo hablan con el ALB interno.
+resource "aws_security_group" "vpc_link" {
+  name        = "${local.name}-vpc-link"
+  description = "VPC Link de API Gateway hacia el ALB interno"
   vpc_id      = data.aws_vpc.default.id
 
-  ingress {
-    description = "HTTP"
+  egress {
+    description = "Hacia el ALB interno"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [local.vpc_cidr]
+  }
+}
+
+resource "aws_security_group" "alb" {
+  # El nombre cambia junto con el ALB (de público a interno) para no chocar al reemplazarlo.
+  name        = "${local.name}-alb-internal"
+  description = "ALB interno: HTTP desde el VPC Link de API Gateway hacia Kong"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    description     = "HTTP desde el VPC Link"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.vpc_link.id]
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 
   # El ALB solo habla con Kong, dentro de la VPC.
@@ -71,6 +91,14 @@ resource "aws_security_group" "tasks" {
   }
 
   ingress {
+    description = "MongoDB desde el NLB interno"
+    from_port   = 27017
+    to_port     = 27017
+    protocol    = "tcp"
+    cidr_blocks = [local.vpc_cidr]
+  }
+
+  ingress {
     description = "AMQP desde el NLB interno"
     from_port   = 5672
     to_port     = 5672
@@ -79,7 +107,7 @@ resource "aws_security_group" "tasks" {
   }
 
   # Excepción revisada: sin NAT Gateway, las tareas salen a internet por su IP pública para descargar las
-  # imágenes (GHCR, ECR Public) y llamar APIs externas (Gemini, Wompi). Limitarla por IP no es viable porque
+  # imágenes (GHCR, ECR Public) y llamar APIs externas (Groq, Wompi). Limitarla por IP no es viable porque
   # esos destinos no tienen rangos fijos. La entrada sí está cerrada.
   #trivy:ignore:AVD-AWS-0104
   egress {

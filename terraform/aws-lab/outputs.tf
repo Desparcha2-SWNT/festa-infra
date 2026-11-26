@@ -1,6 +1,6 @@
 output "api_base_url" {
-  description = "URL pública del gateway. Es la API_BASE_URL de festa-mobile."
-  value       = "http://${aws_lb.public.dns_name}"
+  description = "URL pública (HTTPS) de la API. Es la API_BASE_URL de festa-mobile."
+  value       = aws_apigatewayv2_api.main.api_endpoint
 }
 
 output "internal_nlb" {
@@ -13,7 +13,7 @@ output "rds_endpoint" {
 }
 
 output "redis_endpoint" {
-  value = aws_elasticache_cluster.redis.cache_nodes[0].address
+  value = aws_elasticache_replication_group.redis.primary_endpoint_address
 }
 
 output "secret_arn" {
@@ -23,4 +23,9 @@ output "secret_arn" {
 
 output "log_group" {
   value = aws_cloudwatch_log_group.main.name
+}
+
+output "wompi_webhook_url" {
+  description = "URL a registrar en el panel de Wompi (Desarrolladores → URL de eventos)."
+  value       = "${aws_apigatewayv2_api.main.api_endpoint}/webhooks/wompi"
 }

@@ -31,12 +31,13 @@ locals {
   rabbitmq_image = "public.ecr.aws/docker/library/rabbitmq:3.13-management-alpine"
   postgres_image = "public.ecr.aws/docker/library/postgres:16-alpine"
   alpine_image   = "public.ecr.aws/docker/library/alpine:3.20"
+  mongo_image    = "public.ecr.aws/docker/library/mongo:7.0"
 
-  image = { for s in ["auth", "user", "event", "gateway"] :
+  image = { for s in local.app_names :
     s => "${var.image_registry}/festa-${s == "gateway" ? "gateway" : "${s}-service"}:${lookup(var.image_tags, s, var.image_tag)}"
   }
 
-  log = { for s in ["auth", "user", "event", "gateway", "rabbitmq", "db-init"] : s => {
+  log = { for s in concat(local.app_names, ["rabbitmq", "mongo", "db-init"]) : s => {
     logDriver = "awslogs"
     options = {
       awslogs-group         = aws_cloudwatch_log_group.main.name
@@ -47,6 +48,8 @@ locals {
 
   write_public_key  = "printf '%s\\n' \"$JWT_PUBLIC_KEY\" > /tmp/jwt_public.pem"
   write_private_key = "printf '%s\\n' \"$JWT_PRIVATE_KEY\" > /tmp/jwt_private.pem"
+  write_qr_secret   = "printf '%s' \"$QR_SIGNING_SECRET\" > /tmp/qr_signing.key"
+  write_fcm_account = "printf '%s' \"$FCM_SERVICE_ACCOUNT_JSON\" > /tmp/firebase-service-account.json"
 
   amqp_env = [
     { name = "JWT_ISSUER", value = "festa-auth" },
@@ -63,7 +66,7 @@ locals {
       command = "${local.write_private_key} && ${local.write_public_key} && exec java -jar app.jar"
       environment = concat(local.amqp_env, [
         { name = "SERVER_PORT", value = "8081" },
-        { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.main.address}:5432/auth_db" },
+        { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.main.address}:5432/auth_db?sslmode=require" },
         { name = "DB_USER", value = "auth_svc" },
         { name = "JWT_PRIVATE_KEY_PATH", value = "/tmp/jwt_private.pem" },
         { name = "JWT_ACCESS_TTL_MINUTES", value = "15" },
@@ -88,11 +91,13 @@ locals {
       command = "${local.write_public_key} && exec java $JAVA_OPTS -jar /app/app.jar"
       environment = concat(local.amqp_env, [
         { name = "SERVER_PORT", value = "8082" },
-        { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.main.address}:5432/user_db" },
+        { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.main.address}:5432/user_db?sslmode=require" },
         { name = "DB_USER", value = "user_svc" },
-        { name = "REDIS_HOST", value = aws_elasticache_cluster.redis.cache_nodes[0].address },
+        { name = "REDIS_HOST", value = aws_elasticache_replication_group.redis.primary_endpoint_address },
         { name = "REDIS_PORT", value = "6379" },
         { name = "REDIS_DATABASE", value = "2" },
+        # ElastiCache exige TLS: Spring Boot lo lee como spring.data.redis.ssl.enabled.
+        { name = "SPRING_DATA_REDIS_SSL_ENABLED", value = "true" },
         { name = "AUTH_BASE_URL", value = local.internal_url["auth"] },
       ])
       secrets = {
@@ -114,6 +119,106 @@ locals {
         AMQP_URL       = "AMQP_URL"
         DATABASE_URL   = "EVENT_DATABASE_URL"
         JWT_PUBLIC_KEY = "JWT_PUBLIC_KEY"
+      }
+    }
+    # RF7, RF10: asistencia y QR de un solo uso.
+    booking = {
+      cpu     = 256
+      memory  = 512
+      port    = 8084
+      command = "${local.write_public_key} && ${local.write_qr_secret} && exec node src/server.js"
+      environment = concat(local.amqp_env, [
+        { name = "PORT", value = "8084" },
+        { name = "QR_SIGNING_SECRET_PATH", value = "/tmp/qr_signing.key" },
+        { name = "RESERVATION_HOLD_MINUTES", value = "15" },
+      ])
+      secrets = {
+        AMQP_URL          = "AMQP_URL"
+        DATABASE_URL      = "BOOKING_DATABASE_URL"
+        JWT_PUBLIC_KEY    = "JWT_PUBLIC_KEY"
+        QR_SIGNING_SECRET = "QR_SIGNING_SECRET"
+      }
+    }
+    # RF11: boletería con Wompi. La simulación de pagos queda apagada salvo que se pida (demos).
+    payment = {
+      cpu     = 256
+      memory  = 512
+      port    = 8085
+      command = "${local.write_public_key} && exec node src/server.js"
+      environment = concat(local.amqp_env, [
+        { name = "PORT", value = "8085" },
+        { name = "WOMPI_ENV", value = var.wompi_env },
+        { name = "WOMPI_PUBLIC_KEY", value = var.wompi_public_key },
+        { name = "WOMPI_REDIRECT_URL", value = var.wompi_redirect_url },
+        { name = "WOMPI_FEE_PERCENT", value = "2.65" },
+        { name = "WOMPI_FEE_FIXED_CENTS", value = "70000" },
+        { name = "IVA_PERCENT", value = "19" },
+        { name = "RESERVATION_HOLD_MINUTES", value = "15" },
+        { name = "PAYMENTS_ALLOW_SIMULATION", value = tostring(var.payments_allow_simulation) },
+      ])
+      secrets = {
+        AMQP_URL               = "AMQP_URL"
+        DATABASE_URL           = "PAYMENT_DATABASE_URL"
+        JWT_PUBLIC_KEY         = "JWT_PUBLIC_KEY"
+        WOMPI_PRIVATE_KEY      = "WOMPI_PRIVATE_KEY"
+        WOMPI_EVENTS_SECRET    = "WOMPI_EVENTS_SECRET"
+        WOMPI_INTEGRITY_SECRET = "WOMPI_INTEGRITY_SECRET"
+        INBOX_RETRY_KEY        = "PAYMENT_INBOX_RETRY_KEY"
+      }
+    }
+    # RF8, RF9: IA Generativa. Sin LLM_API_KEY usa respuestas locales de ejemplo (sin costo).
+    ai = {
+      cpu     = 256
+      memory  = 512
+      port    = 8086
+      command = "${local.write_public_key} && exec uvicorn app.main:app --host 0.0.0.0 --port 8086 --proxy-headers --forwarded-allow-ips='*'"
+      environment = concat(local.amqp_env, [
+        { name = "PORT", value = "8086" },
+        { name = "REDIS_URL", value = "rediss://${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379/1" },
+        { name = "LLM_PROVIDER", value = var.llm_provider },
+        { name = "LLM_CHAT_MODEL", value = var.llm_chat_model },
+        { name = "LLM_DESCRIPTION_MODEL", value = var.llm_description_model },
+        { name = "AI_CHAT_RATE_LIMIT_PER_MIN", value = "10" },
+      ])
+      secrets = {
+        AMQP_URL        = "AMQP_URL"
+        MONGO_URL       = "AI_MONGO_URL"
+        JWT_PUBLIC_KEY  = "JWT_PUBLIC_KEY"
+        LLM_API_KEY     = "LLM_API_KEY"
+        INBOX_RETRY_KEY = "AI_INBOX_RETRY_KEY"
+      }
+    }
+    # RF12: push con Firebase. Sin cuenta de servicio, las notificaciones quedan solo en la bandeja.
+    notification = {
+      cpu     = 256
+      memory  = 512
+      port    = 8087
+      command = "${local.write_public_key} && ${local.write_fcm_account} && exec node src/server.js"
+      environment = concat(local.amqp_env, [
+        { name = "PORT", value = "8087" },
+        { name = "FCM_SERVICE_ACCOUNT_PATH", value = "/tmp/firebase-service-account.json" },
+      ])
+      secrets = {
+        AMQP_URL                 = "AMQP_URL"
+        MONGO_URL                = "NOTIFICATION_MONGO_URL"
+        JWT_PUBLIC_KEY           = "JWT_PUBLIC_KEY"
+        FCM_SERVICE_ACCOUNT_JSON = "FCM_SERVICE_ACCOUNT_JSON"
+      }
+    }
+    # RF15: panel del comercio y KPIs.
+    analytics = {
+      cpu     = 256
+      memory  = 512
+      port    = 8088
+      command = "${local.write_public_key} && exec node src/server.js"
+      environment = concat(local.amqp_env, [
+        { name = "PORT", value = "8088" },
+      ])
+      secrets = {
+        AMQP_URL        = "AMQP_URL"
+        MONGO_URL       = "ANALYTICS_MONGO_URL"
+        JWT_PUBLIC_KEY  = "JWT_PUBLIC_KEY"
+        INBOX_RETRY_KEY = "ANALYTICS_INBOX_RETRY_KEY"
       }
     }
   }
@@ -229,6 +334,11 @@ resource "aws_ecs_service" "rabbitmq" {
   task_definition = aws_ecs_task_definition.rabbitmq.arn
   desired_count   = 1
   launch_type     = "FARGATE"
+  # ECS lee los secretos solo al arrancar la tarea: si cambia el secreto, se redespliega.
+  force_new_deployment = true
+  triggers = {
+    secret_version = aws_secretsmanager_secret_version.app.version_id
+  }
 
   # Un solo broker: se apaga el viejo antes de arrancar el nuevo.
   deployment_minimum_healthy_percent = 0
@@ -247,6 +357,79 @@ resource "aws_ecs_service" "rabbitmq" {
   }
 
   depends_on = [aws_lb_listener.internal]
+}
+
+# ------------------------------------------------------------------ MongoDB
+# DocumentDB está bloqueado en el Learner Lab (error 2 del RUNBOOK): Mongo corre como tarea de Fargate para
+# ai, notification y analytics, cada uno con su base (ai_db, notification_db, analytics_db). /data/db está
+# en EFS (efs.tf): reiniciar o redesplegar la tarea conserva el historial de chat, las bandejas y los agregados.
+resource "aws_ecs_task_definition" "mongo" {
+  family                   = "${local.name}-mongo"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = 256
+  memory                   = 1024
+  execution_role_arn       = data.aws_iam_role.lab.arn
+  task_role_arn            = data.aws_iam_role.lab.arn
+
+  container_definitions = jsonencode([{
+    name             = "mongo"
+    image            = local.mongo_image
+    essential        = true
+    command          = ["mongod", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    portMappings     = [{ containerPort = 27017, protocol = "tcp" }]
+    mountPoints      = [{ sourceVolume = "mongo-data", containerPath = "/data/db", readOnly = false }]
+    environment      = [{ name = "MONGO_INITDB_ROOT_USERNAME", value = "festa" }]
+    secrets          = [{ name = "MONGO_INITDB_ROOT_PASSWORD", valueFrom = local.secret_ref["MONGO_ROOT_PASSWORD"] }]
+    logConfiguration = local.log["mongo"]
+  }])
+
+  volume {
+    name = "mongo-data"
+    efs_volume_configuration {
+      file_system_id     = aws_efs_file_system.mongo.id
+      transit_encryption = "ENABLED"
+      authorization_config {
+        access_point_id = aws_efs_access_point.mongo.id
+        iam             = "DISABLED"
+      }
+    }
+  }
+}
+
+resource "aws_ecs_service" "mongo" {
+  name            = "mongo"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.mongo.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+  # ECS lee los secretos solo al arrancar la tarea: si cambia el secreto, se redespliega.
+  force_new_deployment = true
+  triggers = {
+    secret_version = aws_secretsmanager_secret_version.app.version_id
+  }
+
+  # Una sola instancia: se apaga la vieja antes de arrancar la nueva. Además es obligatorio con EFS: dos mongod
+  # no pueden abrir el mismo /data/db a la vez.
+  deployment_minimum_healthy_percent = 0
+  deployment_maximum_percent         = 100
+  # EFS en Fargate requiere la plataforma 1.4.0 o posterior.
+  platform_version = "LATEST"
+
+  network_configuration {
+    subnets          = local.subnet_ids
+    security_groups  = [aws_security_group.tasks.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.internal["mongo"].arn
+    container_name   = "mongo"
+    container_port   = 27017
+  }
+
+  # La tarea no arranca si no hay un mount target de EFS en su subred.
+  depends_on = [aws_lb_listener.internal, aws_efs_mount_target.mongo]
 }
 
 # ------------------------------------------------------------------ microservicios
@@ -280,8 +463,13 @@ resource "aws_ecs_service" "service" {
   name            = each.key
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.service[each.key].arn
-  desired_count   = var.services_desired_count
+  desired_count   = lookup(var.desired_counts, each.key, var.services_desired_count)
   launch_type     = "FARGATE"
+  # ECS lee los secretos solo al arrancar la tarea: si cambia el secreto, se redespliega.
+  force_new_deployment = true
+  triggers = {
+    secret_version = aws_secretsmanager_secret_version.app.version_id
+  }
 
   # Spring Boot tarda en arrancar con media vCPU: margen antes de que cuenten los health checks.
   health_check_grace_period_seconds = 180
@@ -303,7 +491,7 @@ resource "aws_ecs_service" "service" {
     container_port   = each.value.port
   }
 
-  depends_on = [aws_lb_listener.internal, terraform_data.db_init, aws_ecs_service.rabbitmq]
+  depends_on = [aws_lb_listener.internal, terraform_data.db_init, aws_ecs_service.rabbitmq, aws_ecs_service.mongo]
 }
 
 # ------------------------------------------------------------------ gateway (Kong)
@@ -328,10 +516,17 @@ resource "aws_ecs_task_definition" "gateway" {
       { name = "AUTH_SERVICE_URL", value = local.internal_url["auth"] },
       { name = "USER_SERVICE_URL", value = local.internal_url["user"] },
       { name = "EVENT_SERVICE_URL", value = local.internal_url["event"] },
-      # El ALB es quien habla con Kong: sin esto, el rate limit por IP vería la IP del ALB y no la del cliente.
+      { name = "BOOKING_SERVICE_URL", value = local.internal_url["booking"] },
+      { name = "PAYMENT_SERVICE_URL", value = local.internal_url["payment"] },
+      { name = "AI_SERVICE_URL", value = local.internal_url["ai"] },
+      { name = "NOTIFICATION_SERVICE_URL", value = local.internal_url["notification"] },
+      { name = "ANALYTICS_SERVICE_URL", value = local.internal_url["analytics"] },
+      # IP real del cliente para el rate limit por IP. API Gateway no la pone en X-Forwarded-For hacia un VPC
+      # Link, así que la escribe en X-Real-IP (apigw.tf, sobrescribiendo lo que mande el cliente). Kong solo
+      # cree ese encabezado si la petición viene de la VPC (el ALB interno).
       { name = "KONG_TRUSTED_IPS", value = local.vpc_cidr },
-      { name = "KONG_REAL_IP_HEADER", value = "X-Forwarded-For" },
-      { name = "KONG_REAL_IP_RECURSIVE", value = "on" },
+      { name = "KONG_REAL_IP_HEADER", value = "X-Real-IP" },
+      { name = "KONG_REAL_IP_RECURSIVE", value = "off" },
     ]
     secrets          = [{ name = "JWT_PUBLIC_KEY", valueFrom = local.secret_ref["JWT_PUBLIC_KEY"] }]
     logConfiguration = local.log["gateway"]
@@ -342,8 +537,13 @@ resource "aws_ecs_service" "gateway" {
   name            = "gateway"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.gateway.arn
-  desired_count   = var.services_desired_count
+  desired_count   = lookup(var.desired_counts, "gateway", var.services_desired_count)
   launch_type     = "FARGATE"
+  # ECS lee los secretos solo al arrancar la tarea: si cambia el secreto, se redespliega.
+  force_new_deployment = true
+  triggers = {
+    secret_version = aws_secretsmanager_secret_version.app.version_id
+  }
 
   health_check_grace_period_seconds = 60
 
@@ -364,5 +564,5 @@ resource "aws_ecs_service" "gateway" {
     container_port   = 8000
   }
 
-  depends_on = [aws_lb_listener.public_http]
+  depends_on = [aws_lb_listener.gateway_http]
 }

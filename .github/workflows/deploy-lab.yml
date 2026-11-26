@@ -54,10 +54,18 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      # Opcionales (environment aws-lab). Sin ellos: Wompi en modo prueba, IA con respuestas de ejemplo y
+      # notificaciones solo en la bandeja de la app.
+      TF_VAR_wompi_public_key: ${{ vars.WOMPI_PUBLIC_KEY || 'pub_test_xxx' }}
+      TF_VAR_wompi_private_key: ${{ secrets.WOMPI_PRIVATE_KEY }}
+      TF_VAR_wompi_events_secret: ${{ secrets.WOMPI_EVENTS_SECRET }}
+      TF_VAR_wompi_integrity_secret: ${{ secrets.WOMPI_INTEGRITY_SECRET }}
+      TF_VAR_llm_api_key: ${{ secrets.LLM_API_KEY }}
+      TF_VAR_fcm_service_account_json: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
         with:
           terraform_version: "1.15.8"
           terraform_wrapper: false
@@ -86,7 +94,8 @@ jobs:
           args="-var image_tag=$TAG -var services_desired_count=$COUNT"
           # Desde el CD de un servicio: solo ese servicio cambia de tag.
           if [ -n "$SERVICE" ]; then
-            case "$SERVICE" in auth|user|event|gateway) ;; *) echo "::error::servicio desconocido: $SERVICE"; exit 1;; esac
+            # Misma lista que app_names en terraform/aws-lab/lb.tf: si se agrega un servicio, cambiar las dos.
+            case "$SERVICE" in auth|user|event|booking|payment|ai|notification|analytics|gateway) ;; *) echo "::error::servicio desconocido: $SERVICE"; exit 1;; esac
             case "$SERVICE_TAG" in latest|sha-[0-9a-f]*) ;; *) echo "::error::tag inválido: $SERVICE_TAG"; exit 1;; esac
             case "$SERVICE_TAG" in *[!a-z0-9-]*) echo "::error::tag inválido: $SERVICE_TAG"; exit 1;; esac
             args="$args -var image_tags={\"$SERVICE\"=\"$SERVICE_TAG\"}"
@@ -97,7 +106,12 @@ jobs:
       - name: Bucket del estado
         id: state
         working-directory: .
-        run: echo "bucket=$(./scripts/aws-lab/bootstrap-state.sh)" >> "$GITHUB_OUTPUT"
+        # En una asignación, un error del script detiene el paso (dentro de un echo se perdería y el fallo
+        # aparecería recién en terraform init, con un "bucket vacío").
+        run: |
+          bucket=$(bash scripts/aws-lab/bootstrap-state.sh)
+          [ -n "$bucket" ] || { echo "::error::No se obtuvo el bucket del estado"; exit 1; }
+          echo "bucket=$bucket" >> "$GITHUB_OUTPUT"
 
       - name: terraform init
         run: |
