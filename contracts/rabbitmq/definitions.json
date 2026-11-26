@@ -381,6 +381,14 @@
       "arguments": {}
     },
     {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "ai-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "merchant.verified",
+      "arguments": {}
+    },
+    {
       "source": "festa.event",
       "vhost": "/",
       "destination": "ai-service.inbox",
