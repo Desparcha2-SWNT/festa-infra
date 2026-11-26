@@ -129,9 +129,9 @@ variable "payments_allow_simulation" {
 
 # ------------------------------------------------------------------ IA (RF8, RF9) y push (RF12)
 variable "llm_provider" {
-  description = "gemini, openai, anthropic u ollama. Sin llm_api_key, ai-service usa respuestas locales de ejemplo."
+  description = "groq, openai, anthropic u ollama. Sin llm_api_key, ai-service usa respuestas locales de ejemplo."
   type        = string
-  default     = "gemini"
+  default     = "groq"
 }
 
 variable "llm_api_key" {
@@ -144,13 +144,13 @@ variable "llm_api_key" {
 variable "llm_chat_model" {
   description = "Modelo de bajo costo para el chat (RNF8)."
   type        = string
-  default     = "gemini-2.5-flash"
+  default     = "llama-3.3-70b-versatile"
 }
 
 variable "llm_description_model" {
   description = "Modelo para las descripciones (RF9)."
   type        = string
-  default     = "gemini-2.5-flash"
+  default     = "llama-3.3-70b-versatile"
 }
 
 variable "fcm_service_account_json" {

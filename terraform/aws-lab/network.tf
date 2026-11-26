@@ -107,7 +107,7 @@ resource "aws_security_group" "tasks" {
   }
 
   # Excepción revisada: sin NAT Gateway, las tareas salen a internet por su IP pública para descargar las
-  # imágenes (GHCR, ECR Public) y llamar APIs externas (Gemini, Wompi). Limitarla por IP no es viable porque
+  # imágenes (GHCR, ECR Public) y llamar APIs externas (Groq, Wompi). Limitarla por IP no es viable porque
   # esos destinos no tienen rangos fijos. La entrada sí está cerrada.
   #trivy:ignore:AVD-AWS-0104
   egress {

@@ -67,8 +67,8 @@
       "eventIds": [
         "6f1c2b8e-3a1d-4c3e-9b0a-1f2e3d4c5b6a"
       ],
-      "provider": "gemini",
-      "model": "gemini-2.5-flash",
+      "provider": "groq",
+      "model": "llama-3.3-70b-versatile",
       "inputTokens": 1400,
       "outputTokens": 260,
       "servedAt": "2026-10-29T19:59:00Z"
