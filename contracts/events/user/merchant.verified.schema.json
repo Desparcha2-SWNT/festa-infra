@@ -11,7 +11,8 @@
     "event-service": "habilita boletería para sus eventos (proyección de comercios verificados)",
     "payment-service": "registra al comercio para liquidaciones",
     "notification-service": "avisa al comercio",
-    "analytics-service": "crea el panel del comercio"
+    "analytics-service": "crea el panel del comercio",
+    "ai-service": "marca el comercio como verificado para que pueda pedir descripciones con IA (RF9)"
   },
   "type": "object",
   "additionalProperties": false,
