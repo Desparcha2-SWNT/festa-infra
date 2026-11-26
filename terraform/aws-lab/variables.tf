@@ -47,9 +47,9 @@ variable "cache_node_type" {
 }
 
 variable "allowed_email_domain" {
-  description = "Dominio de correo permitido para registrarse (piloto ECI)."
+  description = "Dominio de correo permitido para registrarse. Vacío = cualquier dominio (el producto no es exclusivo de la Escuela). Para limitarlo al piloto: escuelaing.edu.co."
   type        = string
-  default     = "escuelaing.edu.co"
+  default     = ""
 }
 
 variable "admin_email" {
