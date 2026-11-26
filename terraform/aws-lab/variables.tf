@@ -144,13 +144,13 @@ variable "llm_api_key" {
 variable "llm_chat_model" {
   description = "Modelo de bajo costo para el chat (RNF8)."
   type        = string
-  default     = "llama-3.3-70b-versatile"
+  default     = "openai/gpt-oss-120b"
 }
 
 variable "llm_description_model" {
   description = "Modelo para las descripciones (RF9)."
   type        = string
-  default     = "llama-3.3-70b-versatile"
+  default     = "openai/gpt-oss-120b"
 }
 
 variable "fcm_service_account_json" {
