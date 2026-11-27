@@ -29,6 +29,7 @@ internet ──HTTPS──► API Gateway ──VPC Link──► ALB interno �
 | MongoDB | Tarea de Fargate (`mongo:7.0`) con `/data/db` en EFS | DocumentDB está bloqueado. EFS cifrado (reposo y tránsito) con access point uid 999: los datos de ai, notification y analytics sobreviven a reinicios y despliegues (`efs.tf`) |
 | Secretos | Secrets Manager | Llaves JWT, contraseñas y llave PII, generadas por Terraform |
 | Logs | CloudWatch Logs `/ecs/festa-lab` | 3 días de retención |
+| Observabilidad | CloudWatch: Container Insights, métricas desde el log de Kong, alarmas y el tablero `festa-lab-observabilidad` | `observability.tf` |
 
 ## Restricciones del Learner Lab (verificadas el 7-nov-2026)
 
@@ -69,6 +70,31 @@ terraform destroy
 
 El estado vive en el bucket `festa-tfstate-<cuenta>`, con bloqueo (`use_lockfile`) y versionado. Así, el
 workflow y cualquier persona del equipo trabajan sobre el mismo estado.
+
+## Observabilidad
+
+Prometheus y Grafana corren solo en Docker Compose. En AWS la observabilidad es CloudWatch (`observability.tf`); la URL del tablero sale en el output `observability_dashboard_url`.
+
+| Qué se ve | De dónde sale |
+|---|---|
+| Peticiones por clase (2xx, 3xx, 4xx, 5xx) y por código exacto | Filtros de métricas sobre el log de acceso de Kong: toda petición de la app pasa por Kong (namespace `Festa/Gateway`) |
+| Latencia p50, p95 y p99 | El tiempo de respuesta de esa misma línea de Kong |
+| Tareas en marcha, CPU y memoria por servicio | Container Insights (`ECS/ContainerInsights`) y `AWS/ECS` |
+| Últimos errores 5xx (método, ruta, código, tiempo) | Consulta de Logs Insights sobre el log de Kong |
+| Errores dentro de los servicios | Consulta de Logs Insights sobre los logs con nivel error |
+
+**Alarmas** (no notifican: el Learner Lab no permite SNS útil; se ven en CloudWatch → Alarmas y en el tablero):
+
+| Alarma | Cuándo salta | Qué hacer |
+|---|---|---|
+| `festa-lab-errores-5xx` | Más de 5 respuestas 5xx en 5 minutos | En «Últimos errores 5xx» ver la ruta y la hora; en el log del servicio de esa ruta buscar el error y su `X-Correlation-ID` (Kong lo pone en cada petición y los servicios lo propagan a sus logs y mensajes) |
+| `festa-lab-latencia-p95` | p95 por encima de 2 s durante 10 minutos | Revisar CPU y memoria del servicio en el tablero; si está al tope, subir réplicas (`desired_counts`) o activar `enable_autoscaling` |
+| `festa-lab-limite-de-peticiones` | Más de 50 respuestas 429 en 5 minutos | Un cliente en bucle o abuso: ver la ruta en el log de Kong |
+| `festa-lab-<servicio>-sin-tareas` | Un servicio sin tareas durante 2 minutos | Ver los eventos del servicio en ECS (por qué se detuvo la tarea) y su log; ECS intenta reemplazarla solo |
+
+Los errores de los mensajes entre servicios no pasan por Kong: se reintentan y, si siguen fallando, van a la cola `*.dlq` de RabbitMQ (consola de RabbitMQ o el tablero de Grafana en local).
+
+Costo: Container Insights cobra métricas por tarea y los filtros de métricas, métricas personalizadas; con un entorno encendido solo durante las pruebas son centavos por sesión.
 
 ## Imágenes
 
