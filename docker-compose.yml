@@ -245,6 +245,7 @@ services:
       DATABASE_URL: postgres://booking_svc:${BOOKING_DB_PASSWORD}@postgres:5432/booking_db
       RESERVATION_HOLD_MINUTES: ${RESERVATION_HOLD_MINUTES}
       QR_SIGNING_SECRET_PATH: /run/secrets/qr_signing.key
+      INBOX_RETRY_KEY: ${BOOKING_INBOX_RETRY_KEY:?define BOOKING_INBOX_RETRY_KEY en .env (openssl rand -hex 32)}
       CHECKIN_OPENS_MINUTES_BEFORE: ${CHECKIN_OPENS_MINUTES_BEFORE:-120}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
