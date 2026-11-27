@@ -29,7 +29,7 @@ fi
 
 # Claves que firman el origen de los reintentos de las inbox (una por servicio). Se generan una sola vez y quedan en
 # .env: si cambiaran en cada arranque, los reintentos pendientes irían a la DLQ. Compose se detiene si siguen vacías.
-for var in ANALYTICS_INBOX_RETRY_KEY PAYMENT_INBOX_RETRY_KEY AI_INBOX_RETRY_KEY; do
+for var in ANALYTICS_INBOX_RETRY_KEY BOOKING_INBOX_RETRY_KEY PAYMENT_INBOX_RETRY_KEY AI_INBOX_RETRY_KEY; do
   if [ -f .env ] && grep -q "^${var}=\$" .env; then
     key=$(openssl rand -hex 32)
     sed -i.bak "s#^${var}=\$#${var}=${key}#" .env && rm -f .env.bak

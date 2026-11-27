@@ -137,6 +137,7 @@ locals {
         DATABASE_URL      = "BOOKING_DATABASE_URL"
         JWT_PUBLIC_KEY    = "JWT_PUBLIC_KEY"
         QR_SIGNING_SECRET = "QR_SIGNING_SECRET"
+        INBOX_RETRY_KEY   = "BOOKING_INBOX_RETRY_KEY"
       }
     }
     # RF11: boletería con Wompi. La simulación de pagos queda apagada salvo que se pida (demos).

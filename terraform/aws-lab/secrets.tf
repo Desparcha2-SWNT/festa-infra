@@ -45,6 +45,11 @@ resource "random_bytes" "analytics_inbox_retry" {
   length = 32
 }
 
+# Ídem para booking: la firma del origen de los reintentos de su inbox.
+resource "random_bytes" "booking_inbox_retry" {
+  length = 32
+}
+
 # Ídem para payment: la firma del origen de los reintentos de su inbox.
 resource "random_bytes" "payment_inbox_retry" {
   length = 32
@@ -92,6 +97,7 @@ locals {
     # Claves que firman el origen de los reintentos de cada inbox. En el Learner Lab no aíslan frente a otras tareas:
     # todas usan LabRole, que lee el secreto completo (ver SECRETS.md).
     ANALYTICS_INBOX_RETRY_KEY = random_bytes.analytics_inbox_retry.hex
+    BOOKING_INBOX_RETRY_KEY   = random_bytes.booking_inbox_retry.hex
     PAYMENT_INBOX_RETRY_KEY   = random_bytes.payment_inbox_retry.hex
     AI_INBOX_RETRY_KEY        = random_bytes.ai_inbox_retry.hex
   }
