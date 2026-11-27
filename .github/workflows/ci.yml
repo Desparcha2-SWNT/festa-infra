@@ -45,7 +45,7 @@ jobs:
       - name: Contratos de mensajería
         working-directory: contracts
         run: |
-          npm ci
+          npm ci --ignore-scripts
           npm run validate
 
       # Falla con avisos de nivel warning o error; los de estilo (info) no bloquean.
