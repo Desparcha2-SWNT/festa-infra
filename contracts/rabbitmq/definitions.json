@@ -949,6 +949,22 @@
       "arguments": {}
     },
     {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "moderation.event_hidden",
+      "arguments": {}
+    },
+    {
+      "source": "festa.user",
+      "vhost": "/",
+      "destination": "notification-service.inbox",
+      "destination_type": "queue",
+      "routing_key": "moderation.event_restored",
+      "arguments": {}
+    },
+    {
       "source": "festa.event",
       "vhost": "/",
       "destination": "notification-service.inbox",

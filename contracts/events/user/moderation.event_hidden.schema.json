@@ -8,7 +8,8 @@
   "x-producer": "user-service",
   "x-version": 1,
   "x-consumers": {
-    "event-service": "status = hidden"
+    "event-service": "status = hidden",
+    "notification-service": "cancela los recordatorios del evento"
   },
   "type": "object",
   "additionalProperties": false,
