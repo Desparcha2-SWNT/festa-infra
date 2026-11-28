@@ -8,7 +8,8 @@
   "x-producer": "user-service",
   "x-version": 1,
   "x-consumers": {
-    "event-service": "status = published (si no ha expirado)"
+    "event-service": "status = published (si no ha expirado)",
+    "notification-service": "reactiva los recordatorios que pausó la moderación"
   },
   "type": "object",
   "additionalProperties": false,
