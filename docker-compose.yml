@@ -43,7 +43,7 @@ services:
     volumes:
       - pg-data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER}"]
       interval: 5s
@@ -63,7 +63,7 @@ services:
     volumes:
       - mongo-data:/data/db
       - ./mongo/init:/docker-entrypoint-initdb.d:ro
-    ports: ["27017:27017"]
+    ports: ["127.0.0.1:27017:27017"]
     healthcheck:
       test: ["CMD-SHELL", "$$(command -v mongosh || command -v mongo) --quiet --eval 'db.adminCommand({ping: 1}).ok'"]
       interval: 5s
@@ -75,7 +75,7 @@ services:
     mem_limit: 160m
     image: redis:7.4-alpine
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
-    ports: ["6379:6379"]
+    ports: ["127.0.0.1:6379:6379"]
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
@@ -95,7 +95,7 @@ services:
       - rabbit-data:/var/lib/rabbitmq
       - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
       - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-festa.conf:ro
-    ports: ["5672:5672", "15672:15672"]
+    ports: ["127.0.0.1:5672:5672", "127.0.0.1:15672:15672"]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:15692/metrics && nc -z 127.0.0.1 5672"]
       interval: 10s
@@ -127,7 +127,7 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prom-data:/prometheus
-    ports: ["9090:9090"]
+    ports: ["127.0.0.1:9090:9090"]
 
   grafana:
     <<: *service
@@ -140,7 +140,7 @@ services:
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana-data:/var/lib/grafana
-    ports: ["3000:3000"]
+    ports: ["127.0.0.1:3000:3000"]
     depends_on: [prometheus]
 
   # ======================= GATEWAY =======================
@@ -182,7 +182,7 @@ services:
     volumes:
       - ./secrets/jwt_private.pem:/run/secrets/jwt_private.pem:ro
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
-    ports: ["8081:8081"]
+    ports: ["127.0.0.1:8081:8081"]
     depends_on: *depends-core
 
   # Spring Boot, mismas variables que auth-service.
@@ -207,7 +207,7 @@ services:
       PII_ENCRYPTION_KEY: ${PII_ENCRYPTION_KEY}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
-    ports: ["8082:8082"]
+    ports: ["127.0.0.1:8082:8082"]
     depends_on:
       <<: *depends-core
       redis: { condition: service_healthy }
@@ -227,7 +227,7 @@ services:
       PUBLIC_SHARE_BASE_URL: ${PUBLIC_SHARE_BASE_URL:-https://festa.app/e}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
-    ports: ["8083:8083"]
+    ports: ["127.0.0.1:8083:8083"]
     depends_on:
       <<: *depends-core
       redis: { condition: service_healthy }
@@ -249,7 +249,7 @@ services:
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
       - ./secrets/qr_signing.key:/run/secrets/qr_signing.key:ro
-    ports: ["8084:8084"]
+    ports: ["127.0.0.1:8084:8084"]
     depends_on: *depends-core
 
   payment-service:
@@ -279,7 +279,7 @@ services:
       INBOX_RETRY_KEY: ${PAYMENT_INBOX_RETRY_KEY:?define PAYMENT_INBOX_RETRY_KEY en .env (openssl rand -hex 32)}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
-    ports: ["8085:8085"]
+    ports: ["127.0.0.1:8085:8085"]
     depends_on: *depends-core
 
   ai-service:
@@ -303,7 +303,7 @@ services:
       OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
-    ports: ["8086:8086"]
+    ports: ["127.0.0.1:8086:8086"]
     depends_on:
       mongo: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -324,7 +324,7 @@ services:
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
       - ./secrets/${FCM_SERVICE_ACCOUNT_FILE}:/run/secrets/${FCM_SERVICE_ACCOUNT_FILE}:ro
-    ports: ["8087:8087"]
+    ports: ["127.0.0.1:8087:8087"]
     depends_on:
       mongo: { condition: service_healthy }
       rabbitmq-topology: { condition: service_completed_successfully }
@@ -344,7 +344,7 @@ services:
       INBOX_RETRY_KEY: ${ANALYTICS_INBOX_RETRY_KEY:?define ANALYTICS_INBOX_RETRY_KEY en .env (openssl rand -hex 32)}
     volumes:
       - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
-    ports: ["8088:8088"]
+    ports: ["127.0.0.1:8088:8088"]
     depends_on:
       mongo: { condition: service_healthy }
       rabbitmq-topology: { condition: service_completed_successfully }
